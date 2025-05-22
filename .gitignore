@@ -23,3 +23,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+#src-tauri/gen/*
+src-tauri/gen/android/gradle
+src-tauri/gen/android/keystore.properties
+src-tauri/gen/android/upload-keystore.jks
+src-tauri/Cargo.lock
