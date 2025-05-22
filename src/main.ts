@@ -1,4 +1,9 @@
 import { createApp } from "vue";
 import App from "./App.vue";
+import router from "./router";
 
-createApp(App).mount("#app");
+import ElementPlus from "element-plus";
+
+const app = createApp(App);
+app.use(router);
+app.mount("#app");
