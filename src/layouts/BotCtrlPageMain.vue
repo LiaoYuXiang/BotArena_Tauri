@@ -42,7 +42,7 @@ const onEnd = () => {
     <div class="game-container">
       <Joystick
         :color="'#aaa'"
-        :size="250"
+        :size="150"
         :threshold="0.2"
         @start="onStart"
         @move="onMove"
