@@ -50,7 +50,7 @@ const popupList = () => {
 </template>
 
 <style scoped lang="scss">
-@import "@/assets/styles/colors.scss";
+@use "@/assets/styles/colors.scss" as *;
 .header-bar {
   height: 50px;
   background-color: $primary;
