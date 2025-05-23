@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "bot-arena-tauri",
+        "title": "擊劍機器人控制器",
         "width": 800,
         "height": 600
       }
