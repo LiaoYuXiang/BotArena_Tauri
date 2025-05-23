@@ -71,7 +71,7 @@ onMounted(() => {
 
   manager.on("start", () => emits("start"));
 
-  manager.on("move", (evt, data: JoystickOutputData) => {
+  manager.on("move", (_, data: JoystickOutputData) => {
     if (data?.direction && data.angle) {
       emits("move", {
         angle: data.angle.degree,
