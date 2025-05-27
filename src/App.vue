@@ -32,22 +32,23 @@ function togglePopup(): void {
 @use "/src/assets/styles/colors.scss" as *;
 $herder-bar-height: 3.125rem;
 .main-content {
+  color: $text-color;
   height: calc(100vh - $herder-bar-height);
   background-color: $bg-color;
 }
 
 .header-bar {
+  color: $text-color;
   height: $herder-bar-height;
   background-color: $primary;
 }
 
 .icon {
   font-size: 3rem;
-  color: #333;
   transition: color 0.3s;
 }
 
 .icon:hover {
-  color: #666;
+  color: $secondary-text;
 }
 </style>

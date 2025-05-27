@@ -1,20 +1,21 @@
+<script>
+import settingMenu from "@/components/settingMenu.vue";
+</script>
 <template>
   <main class="main-content">
     <div class="setting-list">
-      <van-cell-group class="setting-list-group" inset>
-        <van-cell title="单元格" value="内容" />
-        <van-cell title="单元格" value="内容" label="描述信息" />
-      </van-cell-group>
+      <h1 class="setting-title">設定</h1>
+      <!-- 設定頁面切換 -->
+      <settingMenu />
     </div>
     <div class="setting-content">
-      <van-cell-group class="setting-content-group" inset>
-        <van-cell title="单元格" value="内容" />
-        <van-cell title="单元格" value="内容" label="描述信息" />
-      </van-cell-group>
+      <!-- 設定頁面內容 -->
+      <router-view />
     </div>
   </main>
 </template>
 <style lang="scss" scoped>
+@use "/src/assets/styles/colors.scss" as *;
 .main-content {
   height: 100%;
   width: 100%;
@@ -34,10 +35,11 @@
   grid-area: content;
   height: 100%;
   padding: 0 1rem;
-  .setting-content-group {
-    height: 100%;
-    width: 100%;
-  }
+}
+.setting-title {
+  font-size: 0.875rem;
+  line-height: 1rem;
+  padding: 1rem 1.8rem;
+  color: $secondary-text;
 }
 </style>
-<script></script>
