@@ -1,74 +1,61 @@
 <script setup lang="ts">
 import { ref } from "vue";
+<<<<<<< HEAD
 // import { invoke } from "@tauri-apps/api/core";
+=======
+import SideMenu from "@/components/SideMenu.vue";
+>>>>>>> view
 
+/**
+ * 切換頁面彈出顯示狀態
+ */
 const popupList_show = ref(false);
-const popupList = () => {
+
+/**
+ * 切換頁面彈出顯示狀態切換
+ */
+function togglePopup(): void {
   popupList_show.value = !popupList_show.value;
-};
+}
 </script>
 
 <template>
+  <!-- 頁首導航欄 -->
   <div class="header-bar">
-    <van-icon name="wap-nav" @click="popupList" class="icon" />
+    <van-icon name="wap-nav" @click="togglePopup" class="icon" />
   </div>
-  <router-view></router-view>
-  <van-popup
-    :show="popupList_show"
-    position="left"
-    @update:show="popupList_show = $event"
-    class="popup-list"
-    ><van-cell-group class="list-group">
-      <van-cell
-        title="主頁"
-        to="/"
-        icon="wap-home-o"
-        size="48px"
-        is-link
-        class="popup-list-itom"
-        @click="popupList"
-      />
-      <van-cell
-        title="控制"
-        to="/ctrl"
-        icon="guide-o"
-        size="48px"
-        is-link
-        class="popup-list-itom"
-        @click="popupList"
-      />
-      <van-cell
-        title="設定"
-        to="/setting"
-        icon="setting-o"
-        size="48px"
-        is-link
-        class="popup-list-itom"
-        @click="popupList"
-      /> </van-cell-group
-  ></van-popup>
+  <!-- 主要顯示區域 vue-router 自動切換 -->
+  <main class="main-content">
+    <router-view></router-view>
+  </main>
+  <!-- 頁面切換彈出 -->
+  <SideMenu v-model:show="popupList_show" />
 </template>
 
 <style scoped lang="scss">
+<<<<<<< HEAD
 @use "@/assets/styles/colors.scss" as *;
+=======
+@use "/src/assets/styles/colors.scss" as *;
+$herder-bar-height: 3.125rem;
+.main-content {
+  height: calc(100vh - $herder-bar-height);
+  background-color: $bg-color;
+}
+
+>>>>>>> view
 .header-bar {
-  height: 50px;
+  height: $herder-bar-height;
   background-color: $primary;
 }
+
 .icon {
   font-size: 3rem;
   color: #333;
   transition: color 0.3s;
 }
+
 .icon:hover {
   color: #666;
-}
-.popup-list {
-  z-index: 999;
-  width: 30%;
-  height: 100vh;
-  .list-group {
-    margin: 0 1rem;
-  }
 }
 </style>
