@@ -2,6 +2,8 @@ use std::collections::HashMap;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use reqwest::Client;
 
+mod setting;
+use setting::setting::{load_settings_from_file, save_settings, load_settings};
 
 #[tauri::command]
 async fn greet() -> String {
@@ -38,9 +40,12 @@ async fn post_action(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(load_settings_from_file())
         .invoke_handler(tauri::generate_handler![
             greet,
             post_action,
+            load_settings,
+            save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
