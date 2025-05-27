@@ -1,8 +1,5 @@
 <script setup lang="ts">
-<<<<<<< HEAD
-// import { ref } from "vue";
-import BotCtrlPageMain from "@/layouts/BotCtrlPageMain.vue";
-=======
+
 import { ref } from "vue";
 import Joystick from "../components/Joystick.vue";
 /** 搖桿輸出資訊 */
@@ -41,7 +38,6 @@ const onEnd = () => {
   direction.value = null;
   force.value = null;
 };
->>>>>>> view
 </script>
 
 <template>

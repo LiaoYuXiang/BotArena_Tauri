@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-<<<<<<< HEAD
-// import { invoke } from "@tauri-apps/api/core";
-=======
 import SideMenu from "@/components/SideMenu.vue";
->>>>>>> view
 
 /**
  * 切換頁面彈出顯示狀態
@@ -33,9 +29,7 @@ function togglePopup(): void {
 </template>
 
 <style scoped lang="scss">
-<<<<<<< HEAD
 @use "@/assets/styles/colors.scss" as *;
-=======
 @use "/src/assets/styles/colors.scss" as *;
 $herder-bar-height: 3.125rem;
 .main-content {
@@ -43,7 +37,6 @@ $herder-bar-height: 3.125rem;
   background-color: $bg-color;
 }
 
->>>>>>> view
 .header-bar {
   height: $herder-bar-height;
   background-color: $primary;
