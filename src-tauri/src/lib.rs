@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Mutex;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use reqwest::Client;
 
@@ -40,7 +41,7 @@ async fn post_action(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(load_settings_from_file())
+        .manage(Mutex::new(load_settings_from_file()))
         .invoke_handler(tauri::generate_handler![
             greet,
             post_action,

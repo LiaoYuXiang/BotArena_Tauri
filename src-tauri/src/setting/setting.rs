@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use dirs_next::config_dir;
 use tauri::Error;
 use tauri::State;
@@ -52,13 +53,21 @@ pub fn load_settings_from_file() -> Settings {
 }
 
 #[tauri::command]
-pub fn save_settings(settings: Settings) -> Result<(), Error> {
+pub fn save_settings(
+    settings: Settings,
+    state: State<Mutex<Settings>>
+) -> Result<(), Error> {
+    // ✅ 寫入檔案
     let path = get_settings_path();
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
     let content = serde_json::to_string_pretty(&settings)?;
     fs::write(path, content)?;
+
+    // ✅ 更新記憶體中的 state
+    let mut state_data = state.lock().unwrap();
+    *state_data = settings;
     Ok(())
 }
 
