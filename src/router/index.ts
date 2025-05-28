@@ -11,8 +11,13 @@ import Set_About from "@/views/setting/About.vue";
 import setting_default from "@/views/setting/setting_default.vue";
 
 const routes = [
-  { path: "/", name: "Home", component: Home },
-  { path: "/ctrl", name: "BotCtrl", component: BotCtrl },
+  { path: "/", name: "Home", component: Home, meta: { title: "首頁" } },
+  {
+    path: "/ctrl",
+    name: "BotCtrl",
+    component: BotCtrl,
+    meta: { title: "機器人控制頁面" },
+  },
   {
     path: "/setting",
     name: "Setting",
@@ -22,15 +27,32 @@ const routes = [
         path: "",
         name: "setting_default",
         component: setting_default,
+        meta: { title: "設定" },
       },
-      { path: "ControlMode", name: "ControlMode", component: Set_ControlMode },
+      {
+        path: "ControlMode",
+        name: "ControlMode",
+        component: Set_ControlMode,
+        meta: { title: "控制設定" },
+      },
       {
         path: "Connectivity",
         name: "Connectivity",
         component: Set_Connectivity,
+        meta: { title: "網路連接設定" },
       },
-      { path: "Profiles", name: "Profiles", component: Set_Profiles },
-      { path: "About", name: "About", component: Set_About },
+      {
+        path: "Profiles",
+        name: "Profiles",
+        component: Set_Profiles,
+        meta: { title: "設定檔" },
+      },
+      {
+        path: "About",
+        name: "About",
+        component: Set_About,
+        meta: { title: "關於" },
+      },
     ],
   },
 ];

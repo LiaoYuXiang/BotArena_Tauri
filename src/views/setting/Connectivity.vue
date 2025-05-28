@@ -1,14 +1,25 @@
 <script setup lang="ts">
 import { reactive } from "vue";
-/** 搖桿控制模式設定 */
-const networkConfig = reactive({
+import { invoke } from "@tauri-apps/api/core";
+/** 設定資料格式 */
+interface SettingDt {
+  url: string;
+  port: number;
+}
+/** 網路連線設定 */
+const networkConfig = reactive<SettingDt>({
   /** 連線url */
   url: "http://localhost",
   /** 連線port */
   port: 8080,
 });
 
-// const onChange = (value: number) => showToast("当前值：" + value);
+/** 取得後端資料 */
+const fetchData = async () => {
+  const result = await invoke<SettingDt>("get_Setting_data");
+  // 將回傳資料灌進 reactive 容器
+  Object.assign(networkConfig, result);
+};
 </script>
 <template>
   <section class="setting-content">
@@ -19,7 +30,7 @@ const networkConfig = reactive({
         label="連線網址"
         class=".setting-cell"
       />
-      <van-field v-model="networkConfig.port" type="digit" label="連線 port" />
+      <!-- <van-field v-model="networkConfig.port" type="digit" label="連線 port" /> -->
     </van-cell-group>
   </section>
 </template>
