@@ -12,22 +12,16 @@ import nipplejs, { JoystickManager, JoystickOutputData } from "nipplejs";
 interface JoystickProps {
   /** 搖桿顏色，例如 "blue", "red", "#00ff00" */
   color?: string;
-
   /** 搖桿尺寸（像素），預設 250 */
   size?: number;
-
   /** 靈敏度門檻，0~1，越小越靈敏，預設 0.1 */
   threshold?: number;
-
   /** 是否靜止時保留搖桿樣式 */
   restJoystick?: boolean;
-
   /** 靜止時搖桿透明度，預設 0.5 */
   restOpacity?: number;
-
   /** 是否啟用多點觸控搖桿（通常關閉） */
   multitouch?: boolean;
-
   /** 搖桿模式，可為 'dynamic' 或 'static' */
   mode?: "dynamic" | "static";
 }

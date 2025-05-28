@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
-<<<<<<< HEAD
-// import { invoke } from "@tauri-apps/api/core";
-=======
+import { useRoute } from "vue-router";
 import SideMenu from "@/components/SideMenu.vue";
->>>>>>> view
 
+/** 路由 */
+const route = useRoute();
 /**
  * 切換頁面彈出顯示狀態
  */
@@ -23,6 +22,7 @@ function togglePopup(): void {
   <!-- 頁首導航欄 -->
   <div class="header-bar">
     <van-icon name="wap-nav" @click="togglePopup" class="icon" />
+    <h1 class="header-title">{{ route.meta.title || "BotArena_Tauri" }}</h1>
   </div>
   <!-- 主要顯示區域 vue-router 自動切換 -->
   <main class="main-content">
@@ -33,29 +33,40 @@ function togglePopup(): void {
 </template>
 
 <style scoped lang="scss">
-<<<<<<< HEAD
-@use "@/assets/styles/colors.scss" as *;
-=======
 @use "/src/assets/styles/colors.scss" as *;
-$herder-bar-height: 3.125rem;
+$herder-bar-height: 3rem;
 .main-content {
+  position: relative;
+  color: $text-color;
+  display: flex;
+  flex-direction: column;
   height: calc(100vh - $herder-bar-height);
   background-color: $bg-color;
 }
 
->>>>>>> view
 .header-bar {
+  display: flex;
+  position: relative;
+  color: $text-color;
   height: $herder-bar-height;
   background-color: $primary;
+  box-shadow: $primary-dark 0px 0px 5px;
+  .header-title {
+    position: absolute;
+    right: 50%;
+    transform: translateX(50%);
+    text-align: center;
+    line-height: $herder-bar-height;
+    font-size: 1.25rem;
+  }
 }
 
 .icon {
   font-size: 3rem;
-  color: #333;
   transition: color 0.3s;
 }
 
 .icon:hover {
-  color: #666;
+  color: $secondary-text;
 }
 </style>

@@ -1,10 +1,8 @@
 <script setup lang="ts">
-<<<<<<< HEAD
-// import { ref } from "vue";
-import BotCtrlPageMain from "@/layouts/BotCtrlPageMain.vue";
-=======
+// import BotCtrlPageMain from "@/layouts/BotCtrlPageMain.vue";
 import { ref } from "vue";
 import Joystick from "../components/Joystick.vue";
+import ActionButton from "../components/ActionButton.vue";
 /** 搖桿輸出資訊 */
 /** 搖桿角度 */
 const angle = ref<number | null>(null);
@@ -41,7 +39,11 @@ const onEnd = () => {
   direction.value = null;
   force.value = null;
 };
->>>>>>> view
+const onArrowClick = (direction: "up" | "down" | "left" | "right") => {
+  window.alert(direction);
+  // console.log("按下方向：", direction);
+  // 你可以在這裡處理移動邏輯
+};
 </script>
 
 <template>
@@ -52,8 +54,10 @@ const onEnd = () => {
         <p>角度：{{ angle }}</p>
         <p>方向：{{ direction }}</p>
         <p>力道：{{ force }}</p>
+        <!-- 遊戲畫面容器 -->
       </div>
     </div>
+    <ActionButton :size="15" @click="onArrowClick" />
     <!-- 搖桿 -->
     <div class="game-container">
       <Joystick
@@ -77,6 +81,7 @@ const onEnd = () => {
   display: flex;
 
   .container {
+    height: fit-content;
     z-index: 1;
     .status {
       text-align: center;
