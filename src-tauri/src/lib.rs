@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use reqwest::Client;
 
 mod setting;
-use setting::setting::{load_settings_from_file, save_settings, load_settings};
+use setting::setting::{load_settings_from_file, save_settings, load_settings, get_app_version};
 
 #[tauri::command]
 async fn greet() -> String {
@@ -46,6 +46,7 @@ pub fn run() {
             post_action,
             load_settings,
             save_settings,
+            get_app_version,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
