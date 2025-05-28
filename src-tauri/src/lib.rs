@@ -6,13 +6,6 @@ use reqwest::Client;
 mod setting;
 use setting::setting::{load_settings_from_file, save_settings, load_settings, get_app_version};
 
-#[tauri::command]
-async fn greet() -> String {
-    match reqwest::get("http://127.0.0.1:5000").await {
-        Ok(resp) => resp.text().await.unwrap_or_else(|_| "讀取回應失敗".to_string()),
-        Err(_) => "無法連線到伺服器".to_string(),
-    }
-}
 
 #[tauri::command]
 async fn post_action(
@@ -43,7 +36,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(Mutex::new(load_settings_from_file()))
         .invoke_handler(tauri::generate_handler![
-            greet,
             post_action,
             load_settings,
             save_settings,
