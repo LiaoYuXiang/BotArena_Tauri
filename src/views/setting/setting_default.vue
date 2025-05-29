@@ -1,7 +1,7 @@
 <template>
   <div class="intro-page">
     <van-empty
-      image="/public/BotArena.png"
+      image="/BotArena.png"
       description="請從左側選擇一個設定項目"
     />
   </div>

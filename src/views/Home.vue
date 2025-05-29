@@ -1,6 +1,6 @@
 <template>
   <h1 class="main_title">歡迎來到BotArena_Tauri</h1>
-  <img src="/public/BotArena.png" class="mian_img" />
+  <img src="/BotArena.png" class="mian_img" />
 </template>
 <style lang="scss" scoped>
 @use "/src/assets/styles/colors.scss" as *;
