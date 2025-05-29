@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+// import { invoke } from "@tauri-apps/api/core";
 /** 設定資料格式 */
 interface SettingDt {
   url: string;
@@ -15,11 +15,11 @@ const networkConfig = reactive<SettingDt>({
 });
 
 /** 取得後端資料 */
-const fetchData = async () => {
-  const result = await invoke<SettingDt>("get_Setting_data");
-  // 將回傳資料灌進 reactive 容器
-  Object.assign(networkConfig, result);
-};
+// const fetchData = async () => {
+//   const result = await invoke<SettingDt>("get_Setting_data");
+//   // 將回傳資料灌進 reactive 容器
+//   Object.assign(networkConfig, result);
+// };
 </script>
 <template>
   <section class="setting-content">
