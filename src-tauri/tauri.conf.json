@@ -22,6 +22,7 @@
     }
   },
   "bundle": {
+    "publisher": "YuXiang / Command1",
     "active": true,
     "targets": "all",
     "icon": [
