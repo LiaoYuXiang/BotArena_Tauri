@@ -25,9 +25,18 @@ pub struct Settings {
 }
 
 fn get_settings_path() -> PathBuf {
-    config_dir()
-        .unwrap()
-        .join("bot-arena-tauri/settings.json")
+    #[cfg(target_os = "android")]
+    {
+        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+            .join("bot-arena-tauri/settings.json")
+    }
+
+    #[cfg(not(target_os = "android"))]
+    {
+        config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("bot-arena-tauri/settings.json")
+    }
 }
 
 fn default_settings() -> Settings {
@@ -44,12 +53,25 @@ fn default_settings() -> Settings {
 }
 
 pub fn load_settings_from_file() -> Settings {
-    fs::read_to_string(get_settings_path())
-        .ok()
-        .and_then(|json_str| 
-            serde_json::from_str::<Settings>(&json_str).ok()
-        )
-        .unwrap_or_else(default_settings)
+    let path = get_settings_path();
+    if !path.exists() {
+        return default_settings()
+    }
+    match fs::read_to_string(path) {
+        Ok(json_str) => {
+            serde_json::from_str::<Settings>(&json_str)
+            .unwrap_or_else(|_e| {
+                // println!("⚠️ 設定檔格式錯誤，使用預設值：{}", e);
+                default_settings()
+            })
+        }
+        Err(_e) => {
+            // println!("⚠️ 無法讀取設定檔，使用預設值：{}", e);
+            default_settings()
+        }
+    }
+
+
 }
 
 #[tauri::command]
