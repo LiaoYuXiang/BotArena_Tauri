@@ -4,15 +4,22 @@ use std::sync::Mutex;
 use reqwest::Client;
 
 mod setting;
-use setting::setting::{load_settings_from_file, save_settings, load_settings, get_app_version};
+use setting::setting::{
+    load_settings_from_file,
+    save_settings,
+    load_settings,
+    get_app_version
+};
+
+mod control_action;
 
 
 #[tauri::command]
 async fn post_action(
     url: String,
-    angle: f64,
+    _angle: f64,
     direction: String,
-    force: f64
+    _force: f64
 ) -> bool {
     let client = Client::new();
     let mut map = HashMap::new();
