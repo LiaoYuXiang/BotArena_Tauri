@@ -10,7 +10,7 @@ use crate::setting::setting::{
 
 pub trait Action {}
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ActionControl {
     pub position: String,
     pub direction: String,
@@ -18,13 +18,13 @@ pub struct ActionControl {
 }
 impl Action for ActionControl {}
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct StopAction {
     pub position: String,
 }
 impl Action for StopAction {}
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ReturnStatus {
     pub success: bool,
     pub status: String,
@@ -33,22 +33,13 @@ pub struct ReturnStatus {
 
 #[tauri::command]
 pub async fn robot_control_action(
-    position: String,
-    _angle: f64,
-    direction: String,
-    force: f64,
+    action_control: ActionControl,
     state: State<'_, Mutex<Settings>>,
 ) -> Result<bool, Error> {
     let setting = load_settings(state);
     let url =
         setting.connect.url + ":" + setting.connect.port.to_string().as_str() +
             "/botarena/api/v1/control/group";
-    let action_control = ActionControl {
-        position,
-        direction,
-        force,
-    };
-
 
     match post_action(url, action_control).await {
         Ok(b) => Ok(b),
@@ -57,17 +48,14 @@ pub async fn robot_control_action(
 }
 
 #[tauri::command]
-pub async fn robit_stop_action(
-    position: String,
+pub async fn robot_stop_action(
+    stop_action: StopAction,
     state: State<'_, Mutex<Settings>>,
 ) -> Result<bool, Error> {
     let setting = load_settings(state);
     let url =
         setting.connect.url + ":" + setting.connect.port.to_string().as_str() +
             "/botarena/api/v1/control/stop";
-    let stop_action = StopAction {
-        position,
-    };
 
     match post_action(url, stop_action).await {
         Ok(b) => Ok(b),

@@ -11,7 +11,7 @@ use setting::setting::{
 mod control_action;
 use control_action::control_action::{
     robot_control_action,
-    robit_stop_action,
+    robot_stop_action,
 };
 
 
@@ -27,7 +27,7 @@ pub fn run() {
             get_app_version,
 
             robot_control_action,
-            robit_stop_action,
+            robot_stop_action,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
