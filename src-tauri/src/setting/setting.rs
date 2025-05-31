@@ -77,7 +77,7 @@ pub fn load_settings_from_file() -> Settings {
 #[tauri::command]
 pub fn save_settings(
     settings: Settings,
-    state: State<Mutex<Settings>>
+    state: State<Mutex<Settings>>,
 ) -> Result<(), Error> {
     // ✅ 寫入檔案
     let path = get_settings_path();
@@ -94,8 +94,8 @@ pub fn save_settings(
 }
 
 #[tauri::command]
-pub fn load_settings(state: State<Settings>) -> Settings {
-    state.inner().clone()
+pub fn load_settings(state: State<Mutex<Settings>>) -> Settings {
+    state.lock().unwrap().clone()
 }
 
 #[tauri::command]
