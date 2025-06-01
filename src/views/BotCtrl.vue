@@ -2,13 +2,7 @@
 import { ref, onMounted } from "vue";
 import Joystick from "../components/Joystick.vue";
 import ActionButton from "../components/ActionButton.vue";
-import {
-  actionControl_api,
-  setting_api,
-  Settings,
-  ActionControl,
-  StopAction,
-} from "@/assets/ts/tauri_api.ts";
+import { actionControl_api, setting_api } from "@/assets/ts/tauri_api.ts";
 
 /** 搖桿輸出資訊 */
 /** 搖桿大小 */
@@ -34,7 +28,7 @@ const onStart = () => {
  */
 const onMove = (payload: {
   angle: number;
-  direction: string;
+  direction: "up" | "down" | "left" | "right";
   force: number;
 }) => {
   const forceValue = payload.force < 1 ? payload.force : 1;
@@ -99,7 +93,7 @@ onMounted(() => {
     <!-- 搖桿 -->
     <div class="game-container">
       <Joystick
-        v-if="joystickSize !== null"
+        v-if="joystickSize !== null && joystickThreshold !== null"
         :color="'#aaa'"
         :size="joystickSize"
         :threshold="joystickThreshold"
