@@ -79,7 +79,7 @@ export interface StopAction {
 ```ts
 async function call() {
     await invoke<boolean>('robot_control_action', {
-        action_control: ActionControl = {
+        actionControl: ActionControl = {
             position: 'feet',
             direction: 'up',
             force: 0.2,
@@ -91,7 +91,7 @@ async function call() {
 ```ts
 async function call() {
     await invoke<boolean>('robot_control_action', {
-        action_control: ActionControl = {
+        actionControl: ActionControl = {
             position: 'arm',
             direction: 'down',
             force: 0.4,
@@ -103,7 +103,7 @@ async function call() {
 ```ts
 async function call() {
     await invoke<boolean>('robot_stop_action', {
-        stop_action: StopAction = {
+        stopAction: StopAction = {
             position: 'feet',
         }
     })
@@ -113,7 +113,7 @@ async function call() {
 ```ts
 async function call() {
     await invoke<boolean>('robot_stop_action', {
-        stop_action: StopAction = {
+        stopAction: StopAction = {
             position: 'arm',
         }
     })
