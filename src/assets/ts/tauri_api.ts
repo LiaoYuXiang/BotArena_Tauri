@@ -67,7 +67,7 @@ export const controlAction = async (
   action: ActionControl
 ): Promise<boolean> => {
   return await invoke<boolean>("robot_control_action", {
-    action_control: action,
+    actionControl: action,
   });
 };
 
@@ -77,8 +77,8 @@ export const controlAction = async (
  * @returns 操作是否成功
  */
 export const stopAction = async (stop: StopAction): Promise<boolean> => {
-  return await invoke<boolean>("robit_stop_action", {
-    stop_action: stop,
+  return await invoke<boolean>("robot_stop_action", {
+    stopAction: stop,
   });
 };
 
