@@ -1,14 +1,57 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+// import { reactive } from "vue";
 /** 搖桿控制模式設定 */
-const joystickSettings = reactive({
-  /** 搖桿靈敏度 */
-  sensitivity: 0.2,
-  /** 搖桿大小 */
-  size: 150,
+// const joystickSettings = reactive({
+//   /** 搖桿靈敏度 */
+//   sensitivity: 0.2,
+//   /** 搖桿大小 */
+//   size: 150,
+// });
+import { reactive, watch, onMounted } from "vue";
+import { setting_api, Settings } from "@/assets/ts/tauri_api.ts";
+
+// 取得整體設定物件
+const networkConfig = reactive<Settings>({
+  control: {
+    joystick_sensitivity: 0.2,
+    joystick_size: 150,
+  },
+  connect: {
+    url: "",
+    port: 0,
+  },
 });
 
-// const onChange = (value: number) => showToast("当前值：" + value);
+// 載入設定
+const loadSettings = async () => {
+  const result = await setting_api.getSetting();
+  Object.assign(networkConfig, result);
+};
+
+// 儲存設定（保險：轉型 port）
+const saveSettings = async () => {
+  await setting_api.setSetting({
+    control: networkConfig.control,
+    connect: {
+      ...networkConfig.connect,
+      port: Number(networkConfig.connect.port),
+    },
+  });
+};
+
+// 掛載時載入設定
+onMounted(() => {
+  loadSettings();
+});
+
+// 監聽搖桿控制部分變化，自動儲存
+watch(
+  () => networkConfig.control,
+  () => {
+    saveSettings();
+  },
+  { deep: true }
+);
 </script>
 <template>
   <!-- <van-slider v-model="value" @change="onChange" /> -->
@@ -18,25 +61,27 @@ const joystickSettings = reactive({
       <van-cell title="搖桿靈敏度">
         <template #value>
           <van-slider
-            v-model="joystickSettings.sensitivity"
+            v-model="networkConfig.control.joystick_sensitivity"
             :step="0.01"
             :min="0"
             :max="1"
           />
           <div class="setting-slider-value">
-            {{ joystickSettings.sensitivity }}
+            {{ networkConfig.control.joystick_sensitivity }}
           </div>
         </template>
       </van-cell>
       <van-cell title="搖桿大小">
         <template #value>
           <van-slider
-            v-model="joystickSettings.size"
+            v-model="networkConfig.control.joystick_size"
             :step="10"
             :min="50"
             :max="500"
           />
-          <div class="setting-slider-value">{{ joystickSettings.size }}</div>
+          <div class="setting-slider-value">
+            {{ networkConfig.control.joystick_size }}
+          </div>
         </template>
       </van-cell>
     </van-cell-group>
