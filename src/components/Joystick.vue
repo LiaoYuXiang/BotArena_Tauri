@@ -39,7 +39,11 @@ const emits = defineEmits<{
   (e: "start"): void;
   (
     e: "move",
-    payload: { angle: number; direction: string; force: number }
+    payload: {
+      angle: number;
+      direction: "up" | "down" | "left" | "right";
+      force: number;
+    }
   ): void;
   (e: "end"): void;
 }>();
