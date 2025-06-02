@@ -1,4 +1,5 @@
 use std::sync::Mutex;
+use tauri::Manager;
 
 mod setting;
 use setting::setting::{
@@ -19,7 +20,11 @@ use control_action::control_action::{
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(Mutex::new(load_settings_from_file()))
+        .setup(|app| {
+            let settings = load_settings_from_file(app.handle());
+            app.manage(Mutex::new(settings));
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             load_settings,
             save_settings,

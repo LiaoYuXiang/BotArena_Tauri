@@ -2,8 +2,7 @@ use serde::{Serialize, Deserialize};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use dirs_next::config_dir;
-use tauri::Error;
+use tauri::{AppHandle, Error, Manager, Runtime};
 use tauri::State;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -24,19 +23,10 @@ pub struct Settings {
     pub connect: Connect,
 }
 
-fn get_settings_path() -> PathBuf {
-    #[cfg(target_os = "android")]
-    {
-        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-            .join("bot-arena-tauri/settings.json")
-    }
-
-    #[cfg(not(target_os = "android"))]
-    {
-        config_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("bot-arena-tauri/settings.json")
-    }
+fn get_settings_path<R: Runtime>(app: &AppHandle<R>) -> PathBuf {
+    app.path().config_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join("bot-arena-tauri/settings.json")
 }
 
 fn default_settings() -> Settings {
@@ -52,35 +42,28 @@ fn default_settings() -> Settings {
     }
 }
 
-pub fn load_settings_from_file() -> Settings {
-    let path = get_settings_path();
+pub fn load_settings_from_file<R: Runtime>(app: &AppHandle<R>) -> Settings {
+    let path = get_settings_path(app);
     if !path.exists() {
         return default_settings()
     }
     match fs::read_to_string(path) {
         Ok(json_str) => {
             serde_json::from_str::<Settings>(&json_str)
-            .unwrap_or_else(|_e| {
-                // println!("⚠️ 設定檔格式錯誤，使用預設值：{}", e);
-                default_settings()
-            })
-        }
-        Err(_e) => {
-            // println!("⚠️ 無法讀取設定檔，使用預設值：{}", e);
-            default_settings()
-        }
+                .unwrap_or_else(|_e| default_settings())
+        },
+        Err(_e) => default_settings(),
     }
-
-
 }
 
 #[tauri::command]
-pub fn save_settings(
+pub fn save_settings<R: Runtime>(
+    app: AppHandle<R>,
     settings: Settings,
     state: State<Mutex<Settings>>,
 ) -> Result<(), Error> {
     // ✅ 寫入檔案
-    let path = get_settings_path();
+    let path = get_settings_path(&app);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
