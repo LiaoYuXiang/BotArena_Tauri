@@ -54,6 +54,27 @@ pub fn run() {
 
             Ok(())
         })
+        .on_window_event(move |window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "main" {
+                    window.hide().unwrap();
+                    println!("🧹 清理中...");
+                    api.prevent_close();
+
+                    // 取出真正的 Arc<Mutex<WsClient>>，生命期已經是 'static
+                    let ws_arc = {
+                        let app_handle = window.app_handle();
+                        app_handle.state::<WsClientState>().0.clone()
+                    };
+
+                    tauri::async_runtime::spawn(async move {
+                        let mut ws = ws_arc.lock().await;
+                        ws.disconnect().await;
+                        std::process::exit(0);
+                    });
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             load_settings,
             save_settings,
