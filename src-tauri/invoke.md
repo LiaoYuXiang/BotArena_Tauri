@@ -123,7 +123,7 @@ async function call() {
 
 ## WebSocket 操作
 
-### 更新Url(請在來開設定畫面，並且確定 Settings.Control 有進行更動再乎叫)
+### 更新Url(請在來開設定畫面，並且確定 Settings.Control 有進行更動再呼叫)
 ```ts
 async function call() {
     await invoke<boolean>('reconnect_ws', {})
