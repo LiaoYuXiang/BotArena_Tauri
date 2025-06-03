@@ -17,7 +17,7 @@ use control_action::control_action::{
 };
 
 mod web_socket;
-use web_socket::wss_client::{
+use web_socket::ws_client::{
     WsClient,
     WsClientState,
     robot_control_action_ws,

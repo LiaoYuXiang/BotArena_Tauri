@@ -1,1 +1,1 @@
-pub mod wss_client;
+pub mod ws_client;
