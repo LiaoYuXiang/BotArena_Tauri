@@ -62,7 +62,7 @@ async function call() {
 
 ---
 
-## 控制機器人
+## 控制機器人(ws)
 ### 前置
 ```ts
 export interface ActionControl {
@@ -78,7 +78,7 @@ export interface StopAction {
 ### 控制腿部
 ```ts
 async function call() {
-    await invoke<boolean>('robot_control_action', {
+    await invoke<boolean>('robot_control_action_ws', {
         actionControl: ActionControl = {
             position: 'feet',
             direction: 'up',
@@ -90,7 +90,7 @@ async function call() {
 ### 控制手部
 ```ts
 async function call() {
-    await invoke<boolean>('robot_control_action', {
+    await invoke<boolean>('robot_control_action_ws', {
         actionControl: ActionControl = {
             position: 'arm',
             direction: 'down',
@@ -102,7 +102,7 @@ async function call() {
 ### 停止腿部動作(回覆站立姿態)
 ```ts
 async function call() {
-    await invoke<boolean>('robot_stop_action', {
+    await invoke<boolean>('robot_stop_action_ws', {
         stopAction: StopAction = {
             position: 'feet',
         }
@@ -112,7 +112,7 @@ async function call() {
 ### 停止手部動作(我覺得不需要)
 ```ts
 async function call() {
-    await invoke<boolean>('robot_stop_action', {
+    await invoke<boolean>('robot_stop_action_ws', {
         stopAction: StopAction = {
             position: 'arm',
         }
@@ -120,3 +120,19 @@ async function call() {
 }
 ```
 ---
+
+## WebSocket 操作
+
+### 更新Url(請在來開設定畫面，並且確定 Settings.Control 有進行更動再乎叫)
+```ts
+async function call() {
+    await invoke<boolean>('reconnect_ws', {})
+}
+```
+
+### 檢查是否連線
+```ts
+async function call() {
+    await invoke<boolean>('ws_is_connected', {})
+}
+```
