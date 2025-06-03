@@ -21,8 +21,7 @@ export interface Settings {
  * @returns Settings
  */
 const getSetting = async (): Promise<Settings> => {
-  const result = await invoke<Settings>("load_settings", {});
-  return result;
+  return await invoke<Settings>("load_settings", {});
 };
 /**
  * 寫入設定
@@ -37,8 +36,7 @@ const setSetting = async (settings: Settings) => {
  * @returns 版本號
  */
 const getVersion = async (): Promise<string> => {
-  let result = await invoke<string>("get_app_version", {});
-  return result;
+  return await invoke<string>("get_app_version", {});
 };
 /** 設定相關功能 */
 export const setting_api = {
@@ -66,18 +64,18 @@ export interface StopAction {
 export const controlAction = async (
   action: ActionControl
 ): Promise<boolean> => {
-  return await invoke<boolean>("robot_control_action", {
+  return await invoke<boolean>("robot_control_action_ws", {
     actionControl: action,
   });
 };
 
 /**
  * 停止行為（通用）
- * @param action
+ * @param stop
  * @returns 操作是否成功
  */
 export const stopAction = async (stop: StopAction): Promise<boolean> => {
-  return await invoke<boolean>("robot_stop_action", {
+  return await invoke<boolean>("robot_stop_action_ws", {
     stopAction: stop,
   });
 };
@@ -86,4 +84,26 @@ export const stopAction = async (stop: StopAction): Promise<boolean> => {
 export const actionControl_api = {
   controlAction,
   stopAction,
+};
+
+/**
+ * 根據設定檔重新連接 WebSocket (請在來開設定畫面，並且確定 Settings.Control 有進行更動再呼叫)
+ * @returns 是否重新連接成功
+ */
+export const reconnectWs = async (): Promise<boolean> => {
+  return await invoke<boolean>("reconnect_ws", {});
+};
+
+/**
+ * 檢查是否連接上WebSocket伺服器
+ * @returns 是否連接上WebSocket伺服器
+ */
+export const wsIsConnected = async (): Promise<boolean> => {
+  return await invoke<boolean>("ws_is_connected", {});
+};
+
+/** WebSocket相關功能 */
+export const webSocket_api = {
+  reconnectWs,
+  wsIsConnected,
 };
