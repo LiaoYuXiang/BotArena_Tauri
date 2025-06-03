@@ -57,7 +57,9 @@ pub fn run() {
         .on_window_event(move |window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == "main" {
-                    window.hide().unwrap();
+                    #[cfg(not(target_os = "android"))]
+                    window.hide().unwrap(); // 僅桌面有效
+
                     println!("🧹 清理中...");
                     api.prevent_close();
 
