@@ -36,7 +36,7 @@ fn default_settings() -> Settings {
             joystick_size: 150,
         },
         connect: Connect {
-            url: "http://raspberrypi".to_string(),
+            url: "raspberrypi".to_string(),
             port: 60922,
         },
     }
@@ -60,7 +60,7 @@ pub fn load_settings_from_file<R: Runtime>(app: &AppHandle<R>) -> Settings {
 pub fn save_settings<R: Runtime>(
     app: AppHandle<R>,
     settings: Settings,
-    state: State<Mutex<Settings>>,
+    file_state: State<Mutex<Settings>>,
 ) -> Result<(), Error> {
     // ✅ 寫入檔案
     let path = get_settings_path(&app);
@@ -69,10 +69,10 @@ pub fn save_settings<R: Runtime>(
     }
     let content = serde_json::to_string_pretty(&settings)?;
     fs::write(path, content)?;
-
+    
     // ✅ 更新記憶體中的 state
-    let mut state_data = state.lock().unwrap();
-    *state_data = settings;
+    let mut file = file_state.lock().unwrap();
+    *file = settings;
     Ok(())
 }
 
