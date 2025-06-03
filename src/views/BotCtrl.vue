@@ -7,6 +7,7 @@ import { actionControl_api, setting_api } from "@/assets/ts/tauri_api.ts";
 /** 搖桿輸出資訊 */
 /** 搖桿大小 */
 const joystickSize = ref<number | null>(null);
+/** 搖桿靈敏度 */
 const joystickThreshold = ref<number | null>(null);
 /** 搖桿角度 */
 // const angle = ref<number | null>(null);
@@ -14,6 +15,17 @@ const joystickThreshold = ref<number | null>(null);
 // const direction = ref<string | null>(null);
 /** 搖桿力道 */
 // const force = ref<number | null>(null);
+/** 記錄最後移動的 搖桿資料 */
+let lastPayload: {
+  angle: number;
+  direction: "up" | "down" | "left" | "right";
+  force: number;
+} | null = null;
+
+/** 間隔判斷用計時器 */
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+/** ms 必須持續這段時間才會觸發 */
+const debounceDuration = 200;
 
 /** 搖桿事件處理 */
 const onStart = () => {
@@ -31,25 +43,54 @@ const onMove = (payload: {
   direction: "up" | "down" | "left" | "right";
   force: number;
 }) => {
+  /** 搖桿靈敏度 */
+  const threshold = joystickThreshold.value ?? 0.2;
+  /** 限制最大輸出 */
   const forceValue = payload.force < 1 ? payload.force : 1;
-  actionControl_api.controlAction({
-    position: "feet",
-    direction: payload.direction,
-    force: forceValue,
-  });
-  // angle.value = payload.angle;
-  // direction.value = payload.direction;
-  // force.value = payload.force;
+
+  // 力道變化率太低不處理 同時清除計時器
+  if (forceValue < threshold) {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+    return;
+  }
+  // 與上次記錄的(搖桿資料)相同 並且力道差異<0.05
+  const isSamePayload =
+    lastPayload &&
+    lastPayload.direction === payload.direction &&
+    Math.abs(lastPayload.force - forceValue) < 0.05;
+  // 不同則更新(搖桿資料)
+  if (!isSamePayload) {
+    lastPayload = { ...payload, force: forceValue };
+    // 重設計時器
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(() => {
+      // angle.value = payload.angle;
+      // direction.value = payload.direction;
+      // force.value = payload.force;
+      const endDirection = payload.direction;
+      actionControl_api.controlAction({
+        position: "feet",
+        direction: endDirection,
+        force: forceValue,
+      });
+    }, debounceDuration);
+  }
 };
 
 /** 搖桿結束事件處理 */
 const onEnd = () => {
-  // 停止腳部動作
   actionControl_api.stopAction({ position: "feet" });
-  // console.log("搖桿結束");
-  // angle.value = null;
-  // direction.value = null;
-  // force.value = null;
+
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  lastPayload = null;
 };
 const onArrowClick = (direction: "up" | "down" | "left" | "right") => {
   // 停止上一項動作
@@ -82,12 +123,12 @@ onMounted(() => {
   <div class="main">
     <div class="container">
       <!-- 角度顯示等內容顯示 -->
-      <div class="status">
-        <!-- <p>角度：{{ angle }}</p>
+      <!-- <div class="status"> -->
+      <!-- <p>角度：{{ angle }}</p>
         <p>方向：{{ direction }}</p>
         <p>力道：{{ force }}</p> -->
-        <!-- 遊戲畫面容器 -->
-      </div>
+      <!-- 遊戲畫面容器 -->
+      <!-- </div> -->
     </div>
     <ActionButton :size="15" @click="onArrowClick" />
     <!-- 搖桿 -->
