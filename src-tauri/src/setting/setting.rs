@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Error, Manager, Runtime};
 use tauri::State;
-use crate::web_socket::wss_client::WssClientState;
+use crate::web_socket::wss_client::WsClientState;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Control {
@@ -61,7 +61,7 @@ pub fn load_settings_from_file<R: Runtime>(app: &AppHandle<R>) -> Settings {
 pub fn save_settings<R: Runtime>(
     app: AppHandle<R>,
     settings: Settings,
-    ws_state: State<WssClientState>,
+    ws_state: State<WsClientState>,
     file_state: State<Mutex<Settings>>,
 ) -> Result<(), Error> {
     // 儲存到設定檔

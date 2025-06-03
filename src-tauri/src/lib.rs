@@ -18,8 +18,8 @@ use control_action::control_action::{
 
 mod web_socket;
 use web_socket::wss_client::{
-    WssClient,
-    WssClientState
+    WsClient,
+    WsClientState
 };
 
 
@@ -32,7 +32,7 @@ pub fn run() {
             let settings_clone = settings.clone();
             app.manage(std::sync::Mutex::new(settings));
 
-            let ws = Arc::new(Mutex::new(WssClient::new_split(
+            let ws = Arc::new(Mutex::new(WsClient::new_split(
                 settings_clone.connect.url,
                 settings_clone.connect.port
             )));
@@ -43,10 +43,10 @@ pub fn run() {
                 let mut client = ws_for_spawn.lock().await;
                 client.connect().await;
             });
-            WssClient::start_heartbeat(ws_for_heartbeat.clone());
+            WsClient::start_heartbeat(ws_for_heartbeat.clone());
 
             // 註冊為全域狀態
-            app.manage(WssClientState(ws));
+            app.manage(WsClientState(ws));
 
             Ok(())
         })

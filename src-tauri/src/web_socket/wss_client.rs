@@ -24,13 +24,13 @@ use futures_util::{
 
 
 #[derive(Clone)]
-pub struct WssClientState(
-    pub Arc<Mutex<WssClient>>
+pub struct WsClientState(
+    pub Arc<Mutex<WsClient>>
 );
 
 
 #[derive(Debug)]
-pub struct WssClient {
+pub struct WsClient {
     url: Url,
     socket: Option<WebSocketStream<MaybeTlsStream<TcpStream>>>,
     is_connected: bool,
@@ -44,9 +44,9 @@ pub struct ControlMessage {
     pub force: f32,
 }
 
-impl WssClient {
+impl WsClient {
     pub fn new_split(mut url: String, port: u16) -> Self {
-        url = WssClient::check_url(url);
+        url = WsClient::check_url(url);
         Self {
             url: Url::parse(format!("{}:{}", url, port.to_string()).as_str())
                 .expect("Invalid WSS URL"),
@@ -55,7 +55,7 @@ impl WssClient {
         }
     }
     pub fn new(mut url: String) -> Self {
-        url = WssClient::check_url(url);
+        url = WsClient::check_url(url);
         Self {
             url: Url::parse(url.as_str()).expect("Invalid WSS URL"),
             socket: None,
@@ -93,7 +93,7 @@ impl WssClient {
     pub async fn reconnect_with_url(&mut self, mut url: String, port: u16) -> bool {
         self.disconnect().await;
 
-        url = WssClient::check_url(url);
+        url = WsClient::check_url(url);
 
         self.url = Url::parse(&format!("{}:{}", url, port)).expect("Invalid WSS URL");
         self.connect().await
@@ -135,58 +135,53 @@ impl WssClient {
     }
 
     pub fn start_heartbeat(self_arc: Arc<Mutex<Self>>) {
+        let arc_clone1 = Arc::clone(&self_arc);
         spawn(async move {
             loop {
-                sleep(Duration::from_secs(10)).await;
-
-                let mut client = self_arc.lock().await;
-
-                if let Some(socket) = &mut client.socket {
-                    if let Err(e) = socket.send(Message::Ping(Bytes::new())).await {
-                        println!("💔 心跳失敗: {}，正在重連...", e);
-                        client.is_connected = false;
-                        client.disconnect().await;
-                        client.connect().await;
-                        continue;
-                    }
-
-                    match socket.next().await {
-                        Some(Ok(Message::Pong(_))) => {
-                            println!("💓 收到 Pong 回應，連線正常");
-                        }
-                        Some(Ok(Message::Ping(payload))) => {
-                            println!("📡 收到伺服器 Ping：{:?}，自動回 Pong", payload);
-                            if let Err(e) = socket.send(Message::Pong(payload)).await {
-                                println!("⚠️ 回應 Pong 失敗: {}", e);
-                            }
-                        }
-                        Some(Ok(Message::Close(frame))) => {
-                            println!("🛑 伺服器主動關閉連線：{:?}", frame);
+                {
+                    let mut client = arc_clone1.lock().await;
+                    if let Some(socket) = &mut client.socket {
+                        if let Err(e) = socket.send(Message::Ping(Bytes::new())).await {
+                            println!("💔 心跳 Ping 失敗：{}", e);
                             client.is_connected = false;
                             client.disconnect().await;
-                            continue;
+                            client.connect().await;
                         }
-                        Some(Ok(other)) => {
-                            println!("📥 收到其他訊息：{:?}", other);
+                    }
+                }
+                sleep(Duration::from_secs(10)).await;
+            }
+        });
+
+        let arc_clone2 = Arc::clone(&self_arc);
+        spawn(async move {
+            loop {
+                let mut client = arc_clone2.lock().await;
+                if let Some(socket) = &mut client.socket {
+                    match socket.next().await {
+                        Some(Ok(Message::Ping(payload))) => {
+                            println!("📡 收到 Ping，自動回 Pong");
+                            let _ = socket.send(Message::Pong(payload)).await;
+                        }
+                        Some(Ok(Message::Pong(_))) => {
+                            println!("💓 收到 Pong");
+                        }
+                        Some(Ok(Message::Close(_))) | None => {
+                            println!("🔌 伺服器關閉連線，重新連線...");
+                            client.is_connected = false;
+                            client.disconnect().await;
+                            client.connect().await;
                         }
                         Some(Err(e)) => {
-                            println!("💥 讀取失敗: {e}，斷線重連");
+                            println!("❌ 接收錯誤：{}", e);
                             client.is_connected = false;
                             client.disconnect().await;
                             client.connect().await;
                         }
-                        None => {
-                            println!("🔌 伺服器無回應，重連");
-                            client.is_connected = false;
-                            client.disconnect().await;
-                            client.connect().await;
-                        }
+                        _ => {}
                     }
-
-
                 } else {
-                    println!("🔌 未連線，嘗試連線中...");
-                    client.connect().await;
+                    sleep(Duration::from_secs(1)).await;
                 }
             }
         });
