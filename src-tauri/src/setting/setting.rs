@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Error, Manager, Runtime};
 use tauri::State;
+use crate::web_socket::wss_client::WssClientState;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Control {
@@ -36,7 +37,7 @@ fn default_settings() -> Settings {
             joystick_size: 150,
         },
         connect: Connect {
-            url: "http://raspberrypi".to_string(),
+            url: "raspberrypi".to_string(),
             port: 60922,
         },
     }
@@ -60,7 +61,32 @@ pub fn load_settings_from_file<R: Runtime>(app: &AppHandle<R>) -> Settings {
 pub fn save_settings<R: Runtime>(
     app: AppHandle<R>,
     settings: Settings,
-    state: State<Mutex<Settings>>,
+    ws_state: State<WssClientState>,
+    file_state: State<Mutex<Settings>>,
+) -> Result<(), Error> {
+    // 儲存到設定檔
+    save_settings_to_file(app, settings.clone())?;
+    
+    // 嘗試重連 WebSocket
+    let ws_clone = ws_state.inner().clone();
+    let settings_clone = settings.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut ws = ws_clone.0.lock().await;
+        ws.reconnect_with_url(
+            settings_clone.connect.url.clone(),
+            settings_clone.connect.port.clone()
+        ).await;
+    });
+    
+    // ✅ 更新記憶體中的 state
+    let mut file = file_state.lock().unwrap();
+    *file = settings;
+    Ok(())
+}
+
+fn save_settings_to_file<R: Runtime>(
+    app: AppHandle<R>,
+    settings: Settings,
 ) -> Result<(), Error> {
     // ✅ 寫入檔案
     let path = get_settings_path(&app);
@@ -69,10 +95,6 @@ pub fn save_settings<R: Runtime>(
     }
     let content = serde_json::to_string_pretty(&settings)?;
     fs::write(path, content)?;
-
-    // ✅ 更新記憶體中的 state
-    let mut state_data = state.lock().unwrap();
-    *state_data = settings;
     Ok(())
 }
 

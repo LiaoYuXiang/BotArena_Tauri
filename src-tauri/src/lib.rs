@@ -1,4 +1,5 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tauri::Manager;
 
 mod setting;
@@ -17,8 +18,8 @@ use control_action::control_action::{
 
 mod web_socket;
 use web_socket::wss_client::{
-    WSSClient,
-    WsClientState
+    WssClient,
+    WssClientState
 };
 
 
@@ -28,20 +29,25 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let settings = load_settings_from_file(app.handle());
-            app.manage(Mutex::new(settings.clone()));
+            let settings_clone = settings.clone();
+            app.manage(std::sync::Mutex::new(settings));
 
-            let ws = Arc::new(Mutex::new(WSSClient::new_split(
-                &settings.connect.url.clone(),
-                settings.connect.port.clone()
+            let ws = Arc::new(Mutex::new(WssClient::new_split(
+                settings_clone.connect.url,
+                settings_clone.connect.port
             )));
-            {
-                let mut client = ws.lock().unwrap();
-                client.connect();
-            }
-            WSSClient::start_heartbeat(ws.clone());
+
+            let ws_for_spawn = ws.clone();
+            let ws_for_heartbeat = ws.clone();
+            tauri::async_runtime::spawn(async move {
+                let mut client = ws_for_spawn.lock().await;
+                client.connect().await;
+            });
+            WssClient::start_heartbeat(ws_for_heartbeat.clone());
 
             // 註冊為全域狀態
-            app.manage(WsClientState(ws));
+            app.manage(WssClientState(ws));
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
