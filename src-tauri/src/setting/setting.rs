@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Error, Manager, Runtime};
 use tauri::State;
-use crate::web_socket::wss_client::WsClientState;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Control {
