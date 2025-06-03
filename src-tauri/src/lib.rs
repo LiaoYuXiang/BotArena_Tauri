@@ -19,7 +19,11 @@ use control_action::control_action::{
 mod web_socket;
 use web_socket::wss_client::{
     WsClient,
-    WsClientState
+    WsClientState,
+    robot_control_action_ws,
+    robot_stop_action_ws,
+    reconnect_ws,
+    ws_is_connected
 };
 
 
@@ -58,6 +62,11 @@ pub fn run() {
 
             robot_control_action,
             robot_stop_action,
+
+            robot_control_action_ws,
+            robot_stop_action_ws,
+            reconnect_ws,
+            ws_is_connected,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

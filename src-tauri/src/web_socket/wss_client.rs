@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-use tauri::Url;
+use tauri::{Error, State, Url};
 use tauri::async_runtime::spawn;
 use tokio::{
     sync::Mutex,
@@ -21,7 +21,11 @@ use futures_util::{
     SinkExt,
     StreamExt
 };
-
+use crate::control_action::control_action::{
+    ActionControl,
+    StopAction
+};
+use crate::setting::setting::Settings;
 
 #[derive(Clone)]
 pub struct WsClientState(
@@ -41,7 +45,64 @@ pub struct ControlMessage {
     pub action: String,
     pub position: String,
     pub direction: String,
-    pub force: f32,
+    pub force: f64,
+}
+
+#[tauri::command]
+pub async fn robot_control_action_ws(
+    action_control: ActionControl,
+    ws_state: State<'_, WsClientState>,
+) -> Result<bool, Error> {
+    let msg = ControlMessage {
+        action: "control".to_string(),
+        position: action_control.position,
+        direction: action_control.direction,
+        force: action_control.force,
+    };
+
+    let mut client = ws_state.0.lock().await;
+    Ok(client.send(&msg).await)
+}
+
+#[tauri::command]
+pub async fn robot_stop_action_ws(
+    stop_action: StopAction,
+    ws_state: State<'_, WsClientState>,
+) -> Result<bool, Error> {
+    let msg = ControlMessage {
+        action: "control".to_string(),
+        position: stop_action.position,
+        direction: "".to_string(),
+        force: 0.0,
+    };
+
+    let mut client = ws_state.0.lock().await;
+    Ok(client.send(&msg).await)
+}
+
+#[tauri::command]
+pub async fn reconnect_ws(
+    settings_state: State<'_, std::sync::Mutex<Settings>>,
+    ws_state: State<'_, WsClientState>,
+) -> Result<bool, Error> {
+    let settings = settings_state.lock().unwrap().clone();
+    // 嘗試重連 WebSocket
+    let ws_clone = ws_state.inner().clone();
+    spawn(async move {
+        let mut ws = ws_clone.0.lock().await;
+        ws.reconnect_with_url(
+            settings.connect.url.clone(),
+            settings.connect.port.clone()
+        ).await;
+    });
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn ws_is_connected(
+    ws_state: State<'_, WsClientState>,
+) -> Result<bool, Error> {
+    Ok(ws_state.inner().0.lock().await.is_connected)
 }
 
 impl WsClient {
