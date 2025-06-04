@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import Joystick from "../components/Joystick.vue";
-import ActionButton from "../components/ActionButton.vue";
+// import ActionButton from "../components/ActionButton.vue";
 import {
   actionControl_api,
   setting_api,
@@ -21,15 +21,22 @@ const webSocketConnetState = ref<boolean>(false);
 // const direction = ref<string | null>(null);
 /** 搖桿力道 */
 // const force = ref<number | null>(null);
-/** 記錄最後移動的 搖桿資料 */
+/** 記錄最後移動的 腳部搖桿資料 */
 let lastPayload: {
   angle: number;
   direction: "up" | "down" | "left" | "right";
   force: number;
 } | null = null;
-
-/** 間隔判斷用計時器 */
+/** 記錄最後移動的 手部搖桿資料 */
+let lastPayloadArm: {
+  angle: number;
+  direction: "up" | "down" | "left" | "right";
+  force: number;
+} | null = null;
+/** 腳部間隔判斷用計時器 */
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+/** 手部間隔判斷用計時器 */
+let debounceTimerArm: ReturnType<typeof setTimeout> | null = null;
 /** ms 必須持續這段時間才會觸發 */
 const debounceDuration = 200;
 /** 機器人持續移動計時器 */
@@ -108,13 +115,51 @@ const onEnd = async () => {
   });
   lastPayload = null;
 };
-const onArrowClick = async (direction: "up" | "down" | "left" | "right") => {
-  // 執行手部動作
-  webSocketConnetState.value = await actionControl_api.controlAction({
-    position: "arm",
-    direction: direction,
-    force: 0.5,
-  });
+/** 執行手部動作 */
+const onMove_arm = async (payload: {
+  angle: number;
+  direction: "up" | "down" | "left" | "right";
+  force: number;
+}) => {
+  /** 搖桿靈敏度 */
+  const threshold = joystickThreshold.value ?? 0.2;
+  /** 限制最大輸出 */
+  const forceValue = payload.force < 1 ? payload.force : 1;
+
+  // 力道變化率太低不處理 同時清除計時器
+  if (forceValue < threshold) {
+    if (debounceTimerArm) {
+      clearTimeout(debounceTimerArm);
+      debounceTimerArm = null;
+    }
+    return;
+  }
+  // 與上次記錄的(搖桿資料)相同 並且力道差異<0.05
+  const isSamePayload =
+    lastPayloadArm &&
+    lastPayloadArm.direction === payload.direction &&
+    Math.abs(lastPayloadArm.force - forceValue) < 0.05;
+  // 不同則更新(搖桿資料)
+  if (!isSamePayload) {
+    lastPayloadArm = { ...payload, force: forceValue };
+    // 重設計時器
+    if (debounceTimerArm) {
+      clearTimeout(debounceTimerArm);
+    }
+    debounceTimerArm = setTimeout(async () => {
+      // angle.value = payload.angle;
+      // direction.value = payload.direction;
+      // force.value = payload.force;
+      /** 最終方向 */
+      const endDirection = payload.direction;
+      console.log(`方向:${payload.force}力道:${payload.direction}`);
+      webSocketConnetState.value = await actionControl_api.controlAction({
+        position: "arm",
+        direction: endDirection,
+        force: forceValue,
+      });
+    }, debounceDuration);
+  }
 
   // window.alert(direction);
   // console.log("按下方向：", direction);
@@ -173,7 +218,14 @@ onMounted(() => {
       <!-- 遊戲畫面容器 -->
       <!-- </div> -->
     </div>
-    <ActionButton :size="15" @click="onArrowClick" />
+    <Joystick
+      v-if="joystickSize !== null && joystickThreshold !== null"
+      :color="'#00e'"
+      :size="joystickSize"
+      :threshold="joystickThreshold"
+      @move="onMove_arm"
+    />
+    <!-- <ActionButton :size="15" @click="onArrowClick" /> -->
     <!-- 搖桿 -->
     <div class="game-container">
       <Joystick
