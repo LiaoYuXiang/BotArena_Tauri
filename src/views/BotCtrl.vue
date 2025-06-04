@@ -2,13 +2,19 @@
 import { ref, onMounted } from "vue";
 import Joystick from "../components/Joystick.vue";
 import ActionButton from "../components/ActionButton.vue";
-import { actionControl_api, setting_api } from "@/assets/ts/tauri_api.ts";
+import {
+  actionControl_api,
+  setting_api,
+  webSocket_api,
+} from "@/assets/ts/tauri_api.ts";
 
 /** 搖桿輸出資訊 */
 /** 搖桿大小 */
 const joystickSize = ref<number | null>(null);
 /** 搖桿靈敏度 */
 const joystickThreshold = ref<number | null>(null);
+/** webSocket 連線狀態 */
+const webSocketConnetState = ref<boolean>(false);
 /** 搖桿角度 */
 // const angle = ref<number | null>(null);
 /** 搖桿方向 */
@@ -68,12 +74,12 @@ const onMove = (payload: {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
-    debounceTimer = setTimeout(() => {
+    debounceTimer = setTimeout(async () => {
       // angle.value = payload.angle;
       // direction.value = payload.direction;
       // force.value = payload.force;
       const endDirection = payload.direction;
-      actionControl_api.controlAction({
+      webSocketConnetState.value = await actionControl_api.controlAction({
         position: "feet",
         direction: endDirection,
         force: forceValue,
@@ -83,8 +89,10 @@ const onMove = (payload: {
 };
 
 /** 搖桿結束事件處理 */
-const onEnd = () => {
-  actionControl_api.stopAction({ position: "feet" });
+const onEnd = async () => {
+  webSocketConnetState.value = await actionControl_api.stopAction({
+    position: "feet",
+  });
 
   if (debounceTimer) {
     clearTimeout(debounceTimer);
@@ -92,11 +100,13 @@ const onEnd = () => {
   }
   lastPayload = null;
 };
-const onArrowClick = (direction: "up" | "down" | "left" | "right") => {
+const onArrowClick = async (direction: "up" | "down" | "left" | "right") => {
   // 停止上一項動作
-  actionControl_api.stopAction({ position: "arm" });
+  webSocketConnetState.value = await actionControl_api.stopAction({
+    position: "arm",
+  });
   // 執行手部動作
-  actionControl_api.controlAction({
+  webSocketConnetState.value = await actionControl_api.controlAction({
     position: "arm",
     direction: direction,
     force: 1,
@@ -112,10 +122,17 @@ const loadJoystickSize = async () => {
   joystickThreshold.value = result.control.joystick_sensitivity;
   joystickSize.value = result.control.joystick_size;
 };
-
+/** 確認WebSocketConnet連線狀態 */
+const chackWebSocketConnet = async () => {
+  setTimeout(async () => {
+    webSocketConnetState.value = await webSocket_api.wsIsConnected();
+    chackWebSocketConnet();
+  }, 5000);
+};
 // 初始化時載入設定
 onMounted(() => {
   loadJoystickSize();
+  chackWebSocketConnet();
 });
 </script>
 
@@ -143,6 +160,9 @@ onMounted(() => {
         @end="onEnd"
       />
     </div>
+    <div class="loding" v-if="!webSocketConnetState">
+      <van-loading size="40px" color="#7f8c8d">連線中...</van-loading>
+    </div>
   </div>
 </template>
 
@@ -169,6 +189,12 @@ onMounted(() => {
     left: 0;
     z-index: 0;
     // background-color: #ccc;
+  }
+  .loding {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
   }
 }
 </style>
