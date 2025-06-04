@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, reactive, watch } from "vue";
-import { setting_api, Settings } from "@/assets/ts/tauri_api.ts";
+import { onMounted, onUnmounted, reactive, watch } from "vue";
+import { setting_api, Settings, webSocket_api } from "@/assets/ts/tauri_api.ts";
+import lodash from "lodash";
 /** 網路連線設定 */
 const networkConfig = reactive<Settings>({
   control: {
@@ -12,9 +13,11 @@ const networkConfig = reactive<Settings>({
     port: 0,
   },
 });
+const networkConfigConnectOrigin = {};
 // 載入設定
 const loadSettings = async () => {
   const result = await setting_api.getSetting();
+  Object.assign(networkConfigConnectOrigin, result.connect);
   Object.assign(networkConfig, result);
 };
 
@@ -26,6 +29,12 @@ const saveSettings = async () => {
 // 初始化時載入設定
 onMounted(() => {
   loadSettings();
+});
+// 離開網路連線頁面刷新webSocket
+onUnmounted(() => {
+  if (!lodash.isEqual(networkConfigConnectOrigin, networkConfig.connect)) {
+    webSocket_api.reconnectWs();
+  }
 });
 
 // 監聽 networkConfig，深層 watch 自動儲存
