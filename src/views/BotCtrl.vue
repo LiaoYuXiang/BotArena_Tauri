@@ -34,6 +34,8 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 const debounceDuration = 200;
 /** 機器人持續移動計時器 */
 let keepActionTimer: ReturnType<typeof setTimeout> | null = null;
+/** 機器人持續移動狀態 */
+let keepActionState: boolean = false;
 /** ms 機器人持續移動間隔時間 */
 const keepActionDuration = 200;
 
@@ -82,6 +84,7 @@ const onMove = (payload: {
       // angle.value = payload.angle;
       // direction.value = payload.direction;
       // force.value = payload.force;
+      keepActionState = true;
       /** 最終方向 */
       const endDirection = payload.direction;
       keepAction(endDirection, forceValue);
@@ -91,9 +94,7 @@ const onMove = (payload: {
 
 /** 搖桿結束事件處理 */
 const onEnd = async () => {
-  webSocketConnetState.value = await actionControl_api.stopAction({
-    position: "feet",
-  });
+  keepActionState = false;
   if (keepActionTimer) {
     clearTimeout(keepActionTimer);
     keepActionTimer = null;
@@ -102,6 +103,9 @@ const onEnd = async () => {
     clearTimeout(debounceTimer);
     debounceTimer = null;
   }
+  webSocketConnetState.value = await actionControl_api.stopAction({
+    position: "feet",
+  });
   lastPayload = null;
 };
 const onArrowClick = async (direction: "up" | "down" | "left" | "right") => {
@@ -109,7 +113,7 @@ const onArrowClick = async (direction: "up" | "down" | "left" | "right") => {
   webSocketConnetState.value = await actionControl_api.controlAction({
     position: "arm",
     direction: direction,
-    force: 1,
+    force: 0.5,
   });
 
   // window.alert(direction);
@@ -128,16 +132,20 @@ const keepAction = async (
   force: number
 ) => {
   keepActionTimer = setTimeout(async () => {
-    webSocketConnetState.value = await actionControl_api.controlAction({
-      position: "feet",
-      direction: direction,
-      force: force,
-    });
-    if (keepActionTimer) {
-      clearTimeout(keepActionTimer);
-      keepActionTimer = null;
+    if (keepActionState) {
+      webSocketConnetState.value = await actionControl_api.controlAction({
+        position: "feet",
+        direction: direction,
+        force: force,
+      });
+      if (keepActionTimer) {
+        clearTimeout(keepActionTimer);
+        keepActionTimer = null;
+      }
+      // console.log(`方向:${direction} 力道:${force} 狀態:${keepActionState}`);
+
+      keepAction(direction, force);
     }
-    keepAction(direction, force);
   }, keepActionDuration);
 };
 /** 確認WebSocketConnet連線狀態 */
