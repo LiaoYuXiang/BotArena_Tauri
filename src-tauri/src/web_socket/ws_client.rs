@@ -22,11 +22,29 @@ use futures_util::{
     stream::SplitStream,
     stream::SplitSink,
 };
-use crate::control_action::control_action::{
-    ActionControl,
-    StopAction
-};
 use crate::setting::setting::Settings;
+
+pub trait Action {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ActionControl {
+    pub position: String,
+    pub direction: String,
+    pub force: f64,
+}
+impl Action for ActionControl {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StopAction {
+    pub position: String,
+}
+impl Action for StopAction {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReturnStatus {
+    pub success: bool,
+    pub status: String,
+}
 
 #[derive(Clone)]
 pub struct WsClientState(pub Arc<Mutex<WsClient>>);

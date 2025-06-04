@@ -77,9 +77,6 @@ pub fn run() {
 
             get_app_version,
 
-            robot_control_action,
-            robot_stop_action,
-
             robot_control_action_ws,
             robot_stop_action_ws,
             reconnect_ws,
