@@ -1,9 +1,20 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { setting_api } from "@/assets/ts/tauri_api.ts";
+const version = ref<string>("沒找到所以不想給你");
+// 載入設定
+const loadVersion = async () => {
+  version.value = await setting_api.getVersion();
+};
+onMounted(() => {
+  loadVersion();
+});
+</script>
 <template>
   <section class="setting-content">
     <h1 class="setting-title">關於 About</h1>
     <van-cell-group class="setting-content-group" inset>
-      <van-cell title="版本" value="beta-0" />
+      <van-cell title="版本" :value="version" />
     </van-cell-group>
   </section>
 </template>

@@ -5,12 +5,14 @@ import lodash from "lodash";
 /** 網路連線設定 */
 const networkConfig = reactive<Settings>({
   control: {
-    joystick_sensitivity: 1.0,
-    joystick_size: 100,
+    joystick_sensitivity: 0.2,
+    joystick_size: 150,
+    joystick_send_interval: 0.2,
+    joystick_debounce_interval: 0.2,
   },
   connect: {
-    url: "",
-    port: 0,
+    url: "I_am_Shabi.com",
+    port: 8787,
   },
 });
 const networkConfigConnectOrigin = {};

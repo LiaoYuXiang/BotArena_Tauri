@@ -19,8 +19,8 @@ const networkConfig = reactive<Settings>({
     joystick_debounce_interval: 0.2,
   },
   connect: {
-    url: "",
-    port: 0,
+    url: "I_am_Shabi.com",
+    port: 8787,
   },
 });
 

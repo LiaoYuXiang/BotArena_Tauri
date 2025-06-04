@@ -37,14 +37,14 @@ let lastPayloadArm: {
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 /** 手部間隔判斷用計時器 */
 let debounceTimerArm: ReturnType<typeof setTimeout> | null = null;
-/** ms 必須持續這段時間才會觸發 */
-const debounceDuration = 200;
+/** 防抖間隔 ms 必須持續這段時間才會觸發 */
+let debounceDuration = 200;
 /** 機器人持續移動計時器 */
 let keepActionTimer: ReturnType<typeof setTimeout> | null = null;
 /** 機器人持續移動狀態 */
 let keepActionState: boolean = false;
-/** ms 機器人持續移動間隔時間 */
-const keepActionDuration = 200;
+/** 傳送延遲 ms 機器人持續移動間隔時間 */
+let keepActionDuration = 200;
 
 /** 搖桿事件處理 */
 const onStart = () => {
@@ -170,6 +170,8 @@ const loadJoystickSize = async () => {
   const result = await setting_api.getSetting();
   joystickThreshold.value = result.control.joystick_sensitivity;
   joystickSize.value = result.control.joystick_size;
+  keepActionDuration = result.control.joystick_send_interval;
+  debounceDuration = result.control.joystick_debounce_interval;
 };
 /** 持續移動 */
 const keepAction = async (
