@@ -15,6 +15,8 @@ const networkConfig = reactive<Settings>({
   control: {
     joystick_sensitivity: 0.2,
     joystick_size: 150,
+    joystick_send_interval: 0.2,
+    joystick_debounce_interval: 0.2,
   },
   connect: {
     url: "",
@@ -81,6 +83,32 @@ watch(
           />
           <div class="setting-slider-value">
             {{ networkConfig.control.joystick_size }}
+          </div>
+        </template>
+      </van-cell>
+      <van-cell title="傳送延遲">
+        <template #value>
+          <van-slider
+            v-model="networkConfig.control.joystick_send_interval"
+            :step="0.01"
+            :min="0.01"
+            :max="1"
+          />
+          <div class="setting-slider-value">
+            {{ networkConfig.control.joystick_send_interval }}
+          </div>
+        </template>
+      </van-cell>
+      <van-cell title="防抖間隔">
+        <template #value>
+          <van-slider
+            v-model="networkConfig.control.joystick_debounce_interval"
+            :step="0.01"
+            :min="0.01"
+            :max="1"
+          />
+          <div class="setting-slider-value">
+            {{ networkConfig.control.joystick_debounce_interval }}
           </div>
         </template>
       </van-cell>

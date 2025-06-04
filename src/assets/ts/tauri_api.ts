@@ -3,6 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 export interface Control {
   joystick_sensitivity: number;
   joystick_size: number;
+  joystick_send_interval: number;
+  joystick_debounce_interval: number;
 }
 
 /** 軟體控連線定物件格式 */
