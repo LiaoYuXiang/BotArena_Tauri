@@ -9,6 +9,8 @@ use tauri::State;
 pub struct Control {
     pub joystick_sensitivity: f64,
     pub joystick_size: u32,
+    pub joystick_send_interval: f64,
+    pub joystick_debounce_interval: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -32,8 +34,10 @@ fn get_settings_path<R: Runtime>(app: &AppHandle<R>) -> PathBuf {
 fn default_settings() -> Settings {
     Settings {
         control: Control {
-            joystick_sensitivity: 0.2,
             joystick_size: 150,
+            joystick_sensitivity: 0.2,
+            joystick_send_interval: 0.2,
+            joystick_debounce_interval: 0.2,
         },
         connect: Connect {
             url: "raspberrypi".to_string(),

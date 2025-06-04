@@ -9,8 +9,10 @@ import { invoke } from '@tauri-apps/api/core'
 ### 前置作業
 ```ts
 export interface Control {
-    joystick_sensitivity: number // 0.2
     joystick_size: number // 150
+    joystick_sensitivity: number // 0.2
+    joystick_send_interval: number // 0.2 (0 ~ 1)
+    joystick_debounce_interval: number // 0.2 (0 ~ 1)
 }
 
 export interface Connect {
@@ -38,8 +40,10 @@ async function call() {
     await invoke('save_settings', {
         settings: Settings = {
             control: {
-                joystick_sensitivity: 0.2,
                 joystick_size: 150,
+                joystick_sensitivity: 0.2,
+                joystick_send_interval: 0.2,
+                joystick_debounce_interval: 0.2,
             },
             connect: {
                 url: 'http://raspberrypi',
