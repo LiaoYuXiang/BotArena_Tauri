@@ -9,7 +9,6 @@ use tauri::async_runtime::spawn;
 use tokio::{
     net::TcpStream,
     sync::{Mutex, oneshot},
-    time::sleep
 };
 use tokio_tungstenite::{
     connect_async,
@@ -17,7 +16,6 @@ use tokio_tungstenite::{
     MaybeTlsStream,
     WebSocketStream,
 };
-use bytes::Bytes;
 use futures_util::{
     SinkExt,
     StreamExt,
@@ -181,48 +179,6 @@ impl WsClient {
             }
             _ => false,
         }
-    }
-
-    fn spawn_recv_loop3(&self) {
-        let read_opt = self.read.clone();
-        let pending = self.pending_responses.clone();
-        let write_opt = self.write.clone();
-
-        spawn(async move {
-            if let Some(read_arc) = read_opt {
-                let mut reader = read_arc.lock().await;
-                while let Some(msg) = reader.next().await {
-                    match msg {
-                        Ok(Message::Text(text)) => {
-                            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) {
-                                if let Some(req_id) = value["request_id"].as_str() {
-                                    if let Some(tx) = pending.lock().await.remove(req_id) {
-                                        let _ = tx.send(text.to_string());
-                                        continue;
-                                    }
-                                }
-                            }
-                            println!("📨 一般訊息：{}", text);
-                        }
-                        Ok(Message::Ping(payload)) => {
-                            println!("📡 收到 Ping → 回 Pong");
-                            if let Some(write_arc) = &write_opt {
-                                let mut writer = write_arc.lock().await;
-                                let _ = writer.send(Message::Pong(payload)).await;
-                            }
-                        }
-                        Ok(Message::Pong(_)) => {
-                            println!("💓 收到 Pong");
-                        }
-                        Ok(Message::Close(_)) | Err(_) => {
-                            println!("🔌 WebSocket 關閉或錯誤");
-                            break;
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        });
     }
 
     pub async fn spawn_recv_loop(self_arc: Arc<Mutex<Self>>) {

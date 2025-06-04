@@ -18,7 +18,7 @@ android {
     compileSdk = 34
     namespace = "com.github.LiaoYuXiang.bot_arena_tauri.app"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "com.github.LiaoYuXiang.bot_arena_tauri.app"
         minSdk = 24
         targetSdk = 34
