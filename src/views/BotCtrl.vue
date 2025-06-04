@@ -32,6 +32,10 @@ let lastPayload: {
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 /** ms 必須持續這段時間才會觸發 */
 const debounceDuration = 200;
+/** 機器人持續移動計時器 */
+let keepActionTimer: ReturnType<typeof setTimeout> | null = null;
+/** ms 機器人持續移動間隔時間 */
+const keepActionDuration = 200;
 
 /** 搖桿事件處理 */
 const onStart = () => {
@@ -78,12 +82,9 @@ const onMove = (payload: {
       // angle.value = payload.angle;
       // direction.value = payload.direction;
       // force.value = payload.force;
+      /** 最終方向 */
       const endDirection = payload.direction;
-      webSocketConnetState.value = await actionControl_api.controlAction({
-        position: "feet",
-        direction: endDirection,
-        force: forceValue,
-      });
+      keepAction(endDirection, forceValue);
     }, debounceDuration);
   }
 };
@@ -93,7 +94,10 @@ const onEnd = async () => {
   webSocketConnetState.value = await actionControl_api.stopAction({
     position: "feet",
   });
-
+  if (keepActionTimer) {
+    clearTimeout(keepActionTimer);
+    keepActionTimer = null;
+  }
   if (debounceTimer) {
     clearTimeout(debounceTimer);
     debounceTimer = null;
@@ -101,10 +105,6 @@ const onEnd = async () => {
   lastPayload = null;
 };
 const onArrowClick = async (direction: "up" | "down" | "left" | "right") => {
-  // 停止上一項動作
-  webSocketConnetState.value = await actionControl_api.stopAction({
-    position: "arm",
-  });
   // 執行手部動作
   webSocketConnetState.value = await actionControl_api.controlAction({
     position: "arm",
@@ -121,6 +121,24 @@ const loadJoystickSize = async () => {
   const result = await setting_api.getSetting();
   joystickThreshold.value = result.control.joystick_sensitivity;
   joystickSize.value = result.control.joystick_size;
+};
+/** 持續移動 */
+const keepAction = async (
+  direction: "up" | "down" | "left" | "right",
+  force: number
+) => {
+  keepActionTimer = setTimeout(async () => {
+    webSocketConnetState.value = await actionControl_api.controlAction({
+      position: "feet",
+      direction: direction,
+      force: force,
+    });
+    if (keepActionTimer) {
+      clearTimeout(keepActionTimer);
+      keepActionTimer = null;
+    }
+    keepAction(direction, force);
+  }, keepActionDuration);
 };
 /** 確認WebSocketConnet連線狀態 */
 const chackWebSocketConnet = async () => {
