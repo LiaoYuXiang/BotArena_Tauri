@@ -10,12 +10,6 @@ use setting::setting::{
     get_app_version
 };
 
-mod control_action;
-use control_action::control_action::{
-    robot_control_action,
-    robot_stop_action,
-};
-
 mod web_socket;
 use web_socket::ws_client::{
     WsClient,
