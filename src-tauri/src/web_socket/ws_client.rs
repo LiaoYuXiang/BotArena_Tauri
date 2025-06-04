@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::HashMap,
     sync::Arc,
     time::Duration,
 };
 use tauri::{Error, State, Url};
 use tauri::async_runtime::spawn;
 use tokio::{
-    sync::Mutex,
     net::TcpStream,
+    sync::{Mutex, oneshot},
     time::sleep
 };
 use tokio_tungstenite::{
@@ -19,7 +20,9 @@ use tokio_tungstenite::{
 use bytes::Bytes;
 use futures_util::{
     SinkExt,
-    StreamExt
+    StreamExt,
+    stream::SplitStream,
+    stream::SplitSink,
 };
 use crate::control_action::control_action::{
     ActionControl,
@@ -28,24 +31,31 @@ use crate::control_action::control_action::{
 use crate::setting::setting::Settings;
 
 #[derive(Clone)]
-pub struct WsClientState(
-    pub Arc<Mutex<WsClient>>
-);
-
+pub struct WsClientState(pub Arc<Mutex<WsClient>>);
 
 #[derive(Debug)]
 pub struct WsClient {
     url: Url,
-    socket: Option<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+    write: Option<Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>>>,
+    read: Option<Arc<Mutex<SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>>>>,
     is_connected: bool,
+    pending_responses: Arc<Mutex<HashMap<String, oneshot::Sender<String>>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ControlMessage {
+    pub request_id: String,
     pub action: String,
     pub position: String,
     pub direction: String,
     pub force: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ControlResponse {
+    pub request_id: String,
+    pub success: bool,
+    pub status: String,
 }
 
 #[tauri::command]
@@ -53,15 +63,15 @@ pub async fn robot_control_action_ws(
     action_control: ActionControl,
     ws_state: State<'_, WsClientState>,
 ) -> Result<bool, Error> {
+    let client = ws_state.0.lock().await;
     let msg = ControlMessage {
+        request_id: uuid::Uuid::new_v4().to_string(),
         action: "control".to_string(),
         position: action_control.position,
         direction: action_control.direction,
         force: action_control.force,
     };
-
-    let mut client = ws_state.0.lock().await;
-    Ok(client.send(&msg).await)
+    Ok(client.send_and_wait_response(&msg).await)
 }
 
 #[tauri::command]
@@ -69,15 +79,15 @@ pub async fn robot_stop_action_ws(
     stop_action: StopAction,
     ws_state: State<'_, WsClientState>,
 ) -> Result<bool, Error> {
+    let client = ws_state.0.lock().await;
     let msg = ControlMessage {
-        action: "control".to_string(),
+        request_id: uuid::Uuid::new_v4().to_string(),
+        action: "stop".to_string(),
         position: stop_action.position,
         direction: "".to_string(),
         force: 0.0,
     };
-
-    let mut client = ws_state.0.lock().await;
-    Ok(client.send(&msg).await)
+    Ok(client.send_and_wait_response(&msg).await)
 }
 
 #[tauri::command]
@@ -86,42 +96,35 @@ pub async fn reconnect_ws(
     ws_state: State<'_, WsClientState>,
 ) -> Result<bool, Error> {
     let settings = settings_state.lock().unwrap().clone();
-    // 嘗試重連 WebSocket
     let ws_clone = ws_state.inner().clone();
     spawn(async move {
         let mut ws = ws_clone.0.lock().await;
-        ws.reconnect_with_url(
-            settings.connect.url.clone(),
-            settings.connect.port.clone()
-        ).await;
+        ws.disconnect().await;
+        ws.url = Url::parse(&format!("{}:{}", settings.connect.url, settings.connect.port)).unwrap();
+        ws.connect().await;
     });
     Ok(true)
 }
 
+
 #[tauri::command]
-pub async fn ws_is_connected(
-    ws_state: State<'_, WsClientState>,
-) -> Result<bool, Error> {
-    Ok(ws_state.inner().0.lock().await.is_connected)
+pub async fn ws_is_connected(ws_state: State<'_, WsClientState>) -> Result<bool, Error> {
+    Ok(ws_state.0.lock().await.is_connected)
 }
+
 
 impl WsClient {
     pub fn new_split(mut url: String, port: u16) -> Self {
         url = WsClient::check_url(url);
-        Self {
-            url: Url::parse(format!("{}:{}", url, port.to_string()).as_str())
+        let client = Self {
+            url: Url::parse(&format!("{}:{}", url, port))
                 .expect("Invalid WSS URL"),
-            socket: None,
+            write: None,
+            read: None,
             is_connected: false,
-        }
-    }
-    pub fn new(mut url: String) -> Self {
-        url = WsClient::check_url(url);
-        Self {
-            url: Url::parse(url.as_str()).expect("Invalid WSS URL"),
-            socket: None,
-            is_connected: false,
-        }
+            pending_responses: Arc::new(Mutex::new(HashMap::new())),
+        };
+        client
     }
 
     fn check_url(url: String) -> String {
@@ -139,10 +142,13 @@ impl WsClient {
     pub async fn connect(&mut self) -> bool {
         match connect_async(self.url.as_str()).await {
             Ok((ws_stream, _)) => {
-                self.socket = Some(ws_stream);
+                let (write, read) = ws_stream.split();
+                self.write = Some(Arc::new(Mutex::new(write)));
+                self.read = Some(Arc::new(Mutex::new(read)));
                 self.is_connected = true;
                 println!("✅ Connected to {}", self.url);
                 true
+
             }
             Err(e) => {
                 eprintln!("❌ Failed to connect to {}: {}", self.url, e);
@@ -151,100 +157,132 @@ impl WsClient {
         }
     }
 
-    pub async fn reconnect_with_url(&mut self, mut url: String, port: u16) -> bool {
-        self.disconnect().await;
 
-        url = WsClient::check_url(url);
-
-        self.url = Url::parse(&format!("{}:{}", url, port)).expect("Invalid WSS URL");
-        self.connect().await
-    }
-
-    pub async fn send(&mut self, msg: &ControlMessage) -> bool {
-        if !self.is_connected || self.socket.is_none() {
+    pub async fn send_and_wait_response(&self, msg: &ControlMessage) -> bool {
+        if !self.is_connected {
             return false;
         }
 
-        if let Some(socket) = &mut self.socket.take() {
-            let payload = serde_json::to_string(msg).unwrap();
-            if let Err(e) = socket.send(Message::Text(payload.into())).await {
+        let payload = serde_json::to_string(msg).unwrap();
+        let (tx, rx) = oneshot::channel();
+        self.pending_responses.lock().await.insert(msg.request_id.clone(), tx);
+
+        if let Some(write_arc) = &self.write {
+            let mut write = write_arc.lock().await;
+            if let Err(e) = write.send(Message::Text(payload.into())).await {
                 eprintln!("❌ Send failed: {}", e);
-                self.is_connected = false;
                 return false;
             }
-            true
-        } else {
-            false
         }
-    }
 
-    pub async fn disconnect(&mut self) {
-        if let Some(socket) = &mut self.socket.take() {
-            let _ = socket.close(None).await;
-        }
-        self.is_connected = false;
-        println!("👋 Disconnected.");
-    }
-
-    fn check_connected(&mut self) -> bool {
-        if !self.is_connected || self.socket.is_none() {
-            self.is_connected = false;
-            false
-        } else {
-            true
-        }
-    }
-
-    pub fn start_heartbeat(self_arc: Arc<Mutex<Self>>) {
-        let arc_clone1 = Arc::clone(&self_arc);
-        spawn(async move {
-            loop {
-                {
-                    let mut client = arc_clone1.lock().await;
-                    if let Some(socket) = &mut client.socket {
-                        if let Err(e) = socket.send(Message::Ping(Bytes::new())).await {
-                            println!("💔 心跳 Ping 失敗：{}", e);
-                            client.is_connected = false;
-                            client.disconnect().await;
-                            client.connect().await;
-                        }
-                    }
-                }
-                sleep(Duration::from_secs(10)).await;
+        match tokio::time::timeout(Duration::from_secs(5), rx).await {
+            Ok(Ok(response)) => {
+                serde_json::from_str::<ControlResponse>(&response).unwrap().success
             }
-        });
+            _ => false,
+        }
+    }
 
-        let arc_clone2 = Arc::clone(&self_arc);
+    fn spawn_recv_loop3(&self) {
+        let read_opt = self.read.clone();
+        let pending = self.pending_responses.clone();
+        let write_opt = self.write.clone();
+
         spawn(async move {
-            loop {
-                let mut client = arc_clone2.lock().await;
-                if let Some(socket) = &mut client.socket {
-                    match socket.next().await {
-                        Some(Ok(Message::Ping(payload))) => {
-                            println!("📡 收到 Ping，自動回 Pong");
-                            let _ = socket.send(Message::Pong(payload)).await;
+            if let Some(read_arc) = read_opt {
+                let mut reader = read_arc.lock().await;
+                while let Some(msg) = reader.next().await {
+                    match msg {
+                        Ok(Message::Text(text)) => {
+                            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) {
+                                if let Some(req_id) = value["request_id"].as_str() {
+                                    if let Some(tx) = pending.lock().await.remove(req_id) {
+                                        let _ = tx.send(text.to_string());
+                                        continue;
+                                    }
+                                }
+                            }
+                            println!("📨 一般訊息：{}", text);
                         }
-                        Some(Ok(Message::Pong(_))) => {
+                        Ok(Message::Ping(payload)) => {
+                            println!("📡 收到 Ping → 回 Pong");
+                            if let Some(write_arc) = &write_opt {
+                                let mut writer = write_arc.lock().await;
+                                let _ = writer.send(Message::Pong(payload)).await;
+                            }
+                        }
+                        Ok(Message::Pong(_)) => {
                             println!("💓 收到 Pong");
                         }
-                        Some(Ok(Message::Close(_))) | None => {
-                            println!("🔌 伺服器關閉連線，重新連線...");
-                            client.is_connected = false;
-                            client.disconnect().await;
-                            client.connect().await;
-                        }
-                        Some(Err(e)) => {
-                            println!("❌ 接收錯誤：{}", e);
-                            client.is_connected = false;
-                            client.disconnect().await;
-                            client.connect().await;
+                        Ok(Message::Close(_)) | Err(_) => {
+                            println!("🔌 WebSocket 關閉或錯誤");
+                            break;
                         }
                         _ => {}
                     }
-                } else {
-                    sleep(Duration::from_secs(1)).await;
                 }
             }
         });
+    }
+
+    pub async fn spawn_recv_loop(self_arc: Arc<Mutex<Self>>) {
+        tokio::spawn(async move {
+            loop {
+                {
+                    let (read_arc_opt, pending_opt, connected): (Option<_>, Option<_>, bool) = {
+                        let client = self_arc.lock().await;
+                        (
+                            client.read.clone(),
+                            Some(client.pending_responses.clone()),
+                            client.is_connected
+                        )
+                    };
+
+                    if !connected {
+                        println!("🔄 自動重新連線中...");
+                        let mut client = self_arc.lock().await;
+                        let _ = client.connect().await;
+                        continue;
+                    }
+
+                    if let (Some(read_arc), Some(pending)) = (read_arc_opt, pending_opt) {
+                        let mut reader = read_arc.lock().await;
+                        while let Some(msg) = reader.next().await {
+                            match msg {
+                                Ok(Message::Text(text)) => {
+                                    if let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) {
+                                        if let Some(req_id) = value["request_id"].as_str() {
+                                            if let Some(tx) = pending.lock().await.remove(req_id) {
+                                                let _ = tx.send(text.to_string());
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                    println!("📨 一般訊息：{}", text);
+                                }
+                                Ok(Message::Close(_)) | Err(_) => {
+                                    println!("🔌 WebSocket 關閉或錯誤");
+                                    let mut client = self_arc.lock().await;
+                                    client.is_connected = false;
+                                    break;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
+                tokio::time::sleep(Duration::from_secs(3)).await;
+            }
+        });
+    }
+
+    pub async fn disconnect(&mut self) {
+        if let Some(write_arc) = &self.write {
+            let mut write = write_arc.lock().await;
+            let _ = write.send(Message::Close(None)).await;
+        }
+        self.is_connected = false;
+        println!("👋 Disconnected.");
     }
 }

@@ -46,8 +46,8 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 let mut client = ws_for_spawn.lock().await;
                 client.connect().await;
+                WsClient::spawn_recv_loop(ws_for_heartbeat.clone()).await;
             });
-            WsClient::start_heartbeat(ws_for_heartbeat.clone());
 
             // 註冊為全域狀態
             app.manage(WsClientState(ws));
