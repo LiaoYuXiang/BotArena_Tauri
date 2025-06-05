@@ -116,7 +116,8 @@ pub async fn reconnect_ws(
     spawn(async move {
         let mut ws = ws_clone.0.lock().await;
         ws.disconnect().await;
-        ws.url = Url::parse(&format!("{}:{}", settings.connect.url, settings.connect.port)).unwrap();
+        let url = WsClient::check_url(settings.connect.url);
+        ws.url = Url::parse(&format!("{}:{}", url, settings.connect.port)).unwrap();
         ws.connect().await;
     });
     Ok(true)
