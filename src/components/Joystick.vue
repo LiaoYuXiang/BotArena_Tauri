@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, defineEmits, defineProps } from "vue";
 import nipplejs, { JoystickManager, JoystickOutputData } from "nipplejs";
+import {JoyStickData} from "@/assets/ts/JoyStickControl.ts";
 
 /**
  * Props 型別定義，提供搖桿初始化時的可調參數
@@ -39,11 +40,7 @@ const emits = defineEmits<{
   (e: "start"): void;
   (
     e: "move",
-    payload: {
-      angle: number;
-      direction: "up" | "down" | "left" | "right";
-      force: number;
-    }
+    payload: JoyStickData
   ): void;
   (e: "end"): void;
 }>();
@@ -71,11 +68,11 @@ onMounted(() => {
 
   manager.on("move", (_, data: JoystickOutputData) => {
     if (data?.direction && data.angle) {
-      emits("move", {
-        angle: data.angle.degree,
-        direction: data.direction.angle,
-        force: data.force,
-      });
+      emits("move", new JoyStickData(
+        data.angle.degree,
+        data.direction.angle,
+        data.force,
+      ));
     }
   });
 
