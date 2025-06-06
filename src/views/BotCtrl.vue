@@ -110,18 +110,9 @@ onMounted(async () => {
       <!-- 遊戲畫面容器 -->
       <!-- </div> -->
     </div>
-    <Joystick
-      v-if="joystickSize !== null && joystickThreshold !== null"
-      :color="'#00e'"
-      :size="joystickSize"
-      :threshold="joystickThreshold"
-      @start="onArmStart"
-      @move="onArmMove"
-      @end="onArmEnd"
-    />
     <!-- <ActionButton :size="15" @click="onArrowClick" /> -->
     <!-- 搖桿 -->
-    <div class="game-container">
+    <div class="game-container game-container-left">
       <Joystick
         v-if="joystickSize !== null && joystickThreshold !== null"
         :color="'#aaa'"
@@ -130,6 +121,17 @@ onMounted(async () => {
         @start="onFeetStart"
         @move="onFeetMove"
         @end="onFeetEnd"
+      />
+    </div>
+    <div class="game-container game-container-right">
+      <Joystick
+          v-if="joystickSize !== null && joystickThreshold !== null"
+          :color="'#00e'"
+          :size="joystickSize"
+          :threshold="joystickThreshold"
+          @start="onArmStart"
+          @move="onArmMove"
+          @end="onArmEnd"
       />
     </div>
     <div class="loding" v-if="!webSocketConnetState">
@@ -142,9 +144,10 @@ onMounted(async () => {
 .main {
   width: 100%;
   height: 100%;
-  // overflow: hidden;
+  overflow: hidden;
   position: relative;
   display: flex;
+  touch-action: none;      // ✅ 禁止預設觸控行為（例如捲動）
 
   .container {
     height: fit-content;
@@ -153,15 +156,31 @@ onMounted(async () => {
       text-align: center;
     }
   }
+
   .game-container {
     width: 50%;
     height: 100%;
     position: absolute;
     top: 0;
-    left: 0;
     z-index: 0;
-    // background-color: #ccc;
+    pointer-events: none; // 自己不吃事件
   }
+
+  .game-container > * {
+    pointer-events: auto; // 裡面的搖桿才吃事件
+  }
+
+  .game-container-left {
+    left: 0;
+    //background-color: #ccc;
+  }
+
+
+  .game-container-right {
+    right: 0;
+    //background-color: #ccc;
+  }
+
   .loding {
     position: absolute;
     top: 50%;

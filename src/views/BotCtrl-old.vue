@@ -229,7 +229,7 @@ onMounted(() => {
     />
     <!-- <ActionButton :size="15" @click="onArrowClick" /> -->
     <!-- 搖桿 -->
-    <div class="game-container">
+    <div class="game-container-left">
       <Joystick
         v-if="joystickSize !== null && joystickThreshold !== null"
         :color="'#aaa'"
@@ -261,7 +261,7 @@ onMounted(() => {
       text-align: center;
     }
   }
-  .game-container {
+  .game-container-left {
     width: 50%;
     height: 100%;
     position: absolute;
