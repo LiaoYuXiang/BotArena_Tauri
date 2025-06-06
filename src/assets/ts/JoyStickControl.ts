@@ -200,6 +200,9 @@ export class JoyStickControl {
     async onEnd() {
         this.lastJoyStickData = null
         this.clear()
+        this.webSocketState = await actionControl_api.stopAction({
+            position: this.position,
+        });
         this.alive = false
     };
 
