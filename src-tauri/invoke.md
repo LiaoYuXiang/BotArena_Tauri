@@ -140,3 +140,16 @@ async function call() {
     await invoke<boolean>('ws_is_connected', {})
 }
 ```
+
+### 檢查是否可以操作動作
+```ts
+async function call() {
+    await invoke<boolean>('robot_check_action_can_use_ws', {
+        actionControl: ActionControl = {
+            position: 'arm',
+            direction: '', // 隨意
+            force: 0.0, // 隨意
+        }
+    })
+}
+```

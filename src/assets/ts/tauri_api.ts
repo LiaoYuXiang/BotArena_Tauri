@@ -104,8 +104,21 @@ export const wsIsConnected = async (): Promise<boolean> => {
   return await invoke<boolean>("ws_is_connected", {});
 };
 
+/**
+ * 檢查是否可以操作
+ * @returns 是否可以操作
+ */
+export const robotCheckActionCanUseWs = async (
+    action_control: ActionControl
+): Promise<boolean> => {
+  return await invoke<boolean>("robot_check_action_can_use_ws", {
+    actionControl : action_control
+  });
+};
+
 /** WebSocket相關功能 */
 export const webSocket_api = {
   reconnectWs,
   wsIsConnected,
+  robotCheckActionCanUseWs,
 };

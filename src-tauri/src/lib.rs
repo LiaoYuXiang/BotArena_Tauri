@@ -14,8 +14,11 @@ mod web_socket;
 use web_socket::ws_client::{
     WsClient,
     WsClientState,
+
     robot_control_action_ws,
     robot_stop_action_ws,
+
+    robot_check_action_can_use_ws,
     reconnect_ws,
     ws_is_connected
 };
@@ -79,6 +82,8 @@ pub fn run() {
 
             robot_control_action_ws,
             robot_stop_action_ws,
+
+            robot_check_action_can_use_ws,
             reconnect_ws,
             ws_is_connected,
         ])

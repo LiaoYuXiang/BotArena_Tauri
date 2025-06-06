@@ -74,6 +74,36 @@ pub struct ControlResponse {
     pub status: String,
 }
 
+fn str_to_bool(s: &str) -> Option<bool> {
+    match s.to_lowercase().as_str() {
+        "true" | "1" | "yes" => Some(true),
+        "false" | "0" | "no" => Some(false),
+        _ => None, // 無法轉換
+    }
+}
+
+#[tauri::command]
+pub async fn robot_check_action_can_use_ws(
+    action_control: ActionControl,
+    ws_state: State<'_, WsClientState>,
+) -> Result<bool, Error> {
+    let client = ws_state.0.lock().await;
+    let msg = ControlMessage {
+        request_id: uuid::Uuid::new_v4().to_string(),
+        action: "checkControl".to_string(),
+        position: action_control.position,
+        direction: action_control.direction,
+        force: action_control.force,
+    };
+
+    let control_response = client.send_and_wait_response(&msg).await;
+    if let None = control_response {
+        return Ok(false);
+    }
+    let can_use = str_to_bool(&*control_response.unwrap().status).unwrap_or_else(|| false);
+    Ok(can_use)
+}
+
 #[tauri::command]
 pub async fn robot_control_action_ws(
     action_control: ActionControl,
@@ -87,7 +117,12 @@ pub async fn robot_control_action_ws(
         direction: action_control.direction,
         force: action_control.force,
     };
-    Ok(client.send_and_wait_response(&msg).await)
+
+    let control_response = client.send_and_wait_response(&msg).await;
+    if let None = control_response {
+        return Ok(false);
+    }
+    Ok(control_response.unwrap().success)
 }
 
 #[tauri::command]
@@ -103,7 +138,12 @@ pub async fn robot_stop_action_ws(
         direction: "".to_string(),
         force: 0.0,
     };
-    Ok(client.send_and_wait_response(&msg).await)
+
+    let control_response = client.send_and_wait_response(&msg).await;
+    if let None = control_response {
+        return Ok(false);
+    }
+    Ok(control_response.unwrap().success)
 }
 
 #[tauri::command]
@@ -175,9 +215,9 @@ impl WsClient {
     }
 
 
-    pub async fn send_and_wait_response(&self, msg: &ControlMessage) -> bool {
+    pub async fn send_and_wait_response(&self, msg: &ControlMessage) -> Option<ControlResponse> {
         if !self.is_connected {
-            return false;
+            return None;
         }
 
         let payload = serde_json::to_string(msg).unwrap();
@@ -188,15 +228,15 @@ impl WsClient {
             let mut write = write_arc.lock().await;
             if let Err(e) = write.send(Message::Text(payload.into())).await {
                 eprintln!("❌ Send failed: {}", e);
-                return false;
+                return None;
             }
         }
 
         match tokio::time::timeout(Duration::from_secs(5), rx).await {
             Ok(Ok(response)) => {
-                serde_json::from_str::<ControlResponse>(&response).unwrap().success
-            }
-            _ => false,
+                serde_json::from_str::<ControlResponse>(&response).ok()
+            },
+            _ => None,
         }
     }
 
