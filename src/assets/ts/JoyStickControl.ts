@@ -43,7 +43,8 @@ export class JoyStickControl {
 
     webSocketState: boolean = false
 
-    private log: boolean = true
+    private log: boolean = false
+    private alive: boolean = false
 
     constructor(
         position: "feet" | "arm",
@@ -123,7 +124,8 @@ export class JoyStickControl {
                             this.clearKeepAction()
                             return
                         }
-                        await this.setKeepAction(joyStickData); // 遞迴下一輪
+
+                        if (this.alive) await this.setKeepAction(joyStickData); // 遞迴下一輪
                     } catch (e) {
                         console.error("🚨 controlAction 錯誤：", e);
                         this.clear();
@@ -162,7 +164,9 @@ export class JoyStickControl {
         }
     }
 
-    onStart() {}
+    onStart() {
+        this.alive = true
+    }
 
     async onMove(joyStickData : JoyStickData) {
         // if (this.log)  console.log("onMove")
@@ -194,11 +198,9 @@ export class JoyStickControl {
     }
 
     async onEnd() {
-        this.clear()
         this.lastJoyStickData = null
-        this.webSocketState = await actionControl_api.stopAction({
-            position: this.position,
-        });
+        this.clear()
+        this.alive = false
     };
 
     private checkIsSameSignal(a: JoyStickData | null, b: JoyStickData | null): boolean {
